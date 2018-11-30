@@ -180,7 +180,7 @@ def main():
     if args.original:
         print("use original VGG")
     else:
-        net = vgg_new.VGG('VGG16')
+        net = vgg_new.VGG('VGG16', args.dataset)
     time_buildmodel_end = time.time()
 
     net = net.to(device)

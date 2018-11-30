@@ -4,6 +4,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.backends.cudnn as cudnn
+
 import time
 
 cfg = {
@@ -123,33 +125,7 @@ class lossy_Conv2d_new(nn.Module):
 
 class lossy_Conv2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, padding=1, num_pieces=(2, 2)):
-        def one_mask_matrix(dim=(16, 16, 4, 4), pieces=(2, 2), loss_prob=0.5):
-            # fold into the larger matrix
-            mask_list = [];
-            for i in range(pieces[1]):
-                dummy = []
-                for j in range(pieces[0]):
-                    # because of broadcasting, b[dim[0], dim[1], dim[2], dim[3]] can be replaced by b[dim[2], dim[3]]
-                    b = torch.zeros((dim[2], dim[3]))
-                    b[i * dim[2] // pieces[1]:(i + 1) * dim[2] // pieces[1], j * dim[3] // pieces[0]:(j + 1) * dim[3] // pieces[0]] = 1
-
-                    # use .cuda when the computer has GPU
-                    dummy.append(b)
-                    # dummy.append(b.cuda())
-
-                    '''
-                    b = torch.zeros((dim[0], dim[1], dim[2], dim[3]))
-                    b[:, :, i * dim[2] / pieces[1]:(i + 1) * dim[2] / pieces[1],
-                    j * dim[3] / pieces[0]:(j + 1) * dim[3] / pieces[0]] = 1
-                    dummy.append(b.cuda())
-                    '''
-                mask_list.append(dummy)
-            return mask_list
         super(lossy_Conv2d, self).__init__()
-
-        # !!!!!!! if I define one_mask here, I can NOT know the shape of input
-        self.one_mask = one_mask_matrix()
-        # !!!!!!!
 
         # for each pieces, define a new conv operation
         self.b1 = nn.Sequential(
@@ -161,24 +137,11 @@ class lossy_Conv2d(nn.Module):
     def forward(self, x):
         # print(x.shape)
         def mask_matrix(dim=(16, 16, 4, 4), pieces=(2, 2), loss_prob=0.5):
-            '''
-            b_sub = torch.FloatTensor(dim[0], dim[1], dim[2] / pieces[1] + 2, dim[3] / pieces[0] + 2).uniform_() > 0.5
+            b_sub = torch.FloatTensor(dim[0], dim[1], dim[2] // pieces[1] + 2, dim[3] // pieces[0] + 2).uniform_() > 0.5
             # print(b_sub)
-            b_sub_sub = torch.ones((dim[0], dim[1], dim[2] / pieces[1], dim[3] / pieces[0]))
+            b_sub_sub = torch.ones((dim[0], dim[1], dim[2] // pieces[1], dim[3] // pieces[0]))
             # print((dim[3],dim[2],dim[1],dim[0]))
-            b_sub[:, :, 1:dim[2] / pieces[1] + 1, 1:dim[3] / pieces[0] + 1] = b_sub_sub
-            '''
-
-            # Reduce generated random numbers
-            b_sub = torch.ones((dim[0], dim[1], dim[2] // pieces[1] + 2, dim[3] // pieces[0] + 2))
-            rand1 = torch.FloatTensor(dim[0], dim[1], 2, dim[3] // pieces[0] + 2).uniform_() > 0.5
-            rand2 = torch.FloatTensor(dim[0], dim[1], dim[2] // pieces[1], 2).uniform_() > 0.5
-            b_sub[:, :, 0, :] = rand1[:, :, 0, :]
-            b_sub[:, :, dim[2] // pieces[1] + 1, :] = rand1[:, :, 1, :]
-            b_sub[:, :, 1:-1, 0] = rand2[:, :, :, 0]
-            b_sub[:, :, 1:-1, dim[3] // pieces[0] + 1] = rand2[:, :, :, 1]
-            # print(b_sub[0][0])
-
+            b_sub[:, :, 1:dim[2] // pieces[1] + 1, 1:dim[3] // pieces[0] + 1] = b_sub_sub
 
             # fold into the larger matrix
             mask_list = [];
@@ -190,13 +153,12 @@ class lossy_Conv2d(nn.Module):
                     j * dim[3] // pieces[0]:(j + 1) * dim[3] // pieces[0] + 2] = b_sub
 
                     # My Macbook doesn't have GPU, so I remove .cuda() for test
-                    dummy.append(b[:, :, 1:-1, 1:-1])
-                    # dummy.append(b[:, :, 1:-1, 1:-1].cuda())
+                    #dummy.append(b[:, :, 1:-1, 1:-1])
+                    dummy.append(b[:, :, 1:-1, 1:-1].cuda())
                 mask_list.append(dummy)
             return mask_list
 
         # move this to __init__
-        '''
         def one_mask_matrix(dim=(16, 16, 4, 4), pieces=(2, 2), loss_prob=0.5):
             # fold into the larger matrix
             mask_list = [];
@@ -204,12 +166,12 @@ class lossy_Conv2d(nn.Module):
                 dummy = []
                 for j in range(pieces[0]):
                     b = torch.zeros((dim[0], dim[1], dim[2], dim[3]))
-                    b[:, :, i * dim[2] / pieces[1]:(i + 1) * dim[2] / pieces[1],
-                    j * dim[3] / pieces[0]:(j + 1) * dim[3] / pieces[0]] = 1
+                    b[:, :, i * dim[2] // pieces[1]:(i + 1) * dim[2] // pieces[1],
+                    j * dim[3] // pieces[0]:(j + 1) * dim[3] // pieces[0]] = 1
                     dummy.append(b.cuda())
                 mask_list.append(dummy)
             return mask_list
-        '''
+
         mask = mask_matrix(x.shape, (2, 2), 0.5)
         # print(mask[0][0].shape)
 
@@ -222,9 +184,9 @@ class lossy_Conv2d(nn.Module):
         r21 = self.b1(x21)
         r22 = self.b1(x22)
         # print r11.shape
-        # one_mask = one_mask_matrix(r11.shape, (2, 2), 0.5)
+        one_mask = one_mask_matrix(r11.shape, (2, 2), 0.5)
         # concatenate the results
-        r = r11 * self.one_mask[0][0] + r12 * self.one_mask[0][1] + r21 * self.one_mask[1][0] + r22 * self.one_mask[1][1]
+        r = r11 * one_mask[0][0] + r12 * one_mask[0][1] + r21 * one_mask[1][0] + r22 * one_mask[1][1]
 
         # r = r11 * one_mask[0][0] + r12 * one_mask[0][1] + r21 * one_mask[1][0] + r22 * one_mask[1][1]
         return r
@@ -268,7 +230,7 @@ class Quant_ReLU(nn.Module):
 
 
 class VGG(nn.Module):
-    def __init__(self, vgg_name):
+    def __init__(self, vgg_name, dataset):
         super(VGG, self).__init__()
         # only accept VGG16
         self.features1 = self._make_layers(cfg['VGG16_1'], 3)
@@ -276,7 +238,10 @@ class VGG(nn.Module):
         self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128)
         self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256)
         self.features5 = self._make_layers(cfg['VGG16_5'], 512)
-        self.classifier = nn.Linear(512, 10)
+        if dataset == 'ciffar10':
+            self.classifier = nn.Linear(512, 10)
+        else:
+            self.classifier = nn.Linear(32768, 256)
 
     def forward(self, x):
         # split x
@@ -286,11 +251,12 @@ class VGG(nn.Module):
         (x11, x12) = torch.chunk(x1, 2, 3)
         (x21, x22) = torch.chunk(x2, 2, 3)
         time2 = time.time()
-        #print("Time to split: ", time2 - time1)
+        print("Time to split: ", time2 - time1)
         # out = self.features1(x)
         # out = self.features2(out)
 
         # split the input channel x
+        time1 = time.time()
         out11 = self.features1(x11)
         out11 = self.features2(out11)
         out12 = self.features1(x12)
@@ -302,22 +268,30 @@ class VGG(nn.Module):
         out1 = torch.cat((out11, out12), 3)
         out2 = torch.cat((out21, out22), 3)
         out = torch.cat((out1, out2), 2)
-        print("out shape: ", out.shape)
+        time2 = time.time()
+        print("Time for 4 part to conv: ", time2 - time1)
         # this is the end of the split
 
         # for feature 3, we have the loss transmission
         # mask = mask_matrix((out.shape[3],out.shape[2],out.shape[1],out.shape[0]),(2,2),0.5)
         # one_mask = one_mask_matrix((out.shape[3],out.shape[2],out.shape[1],out.shape[0]),(2,2),0.5)
+        time1 = time.time()
         out = self.features3(out)
         out = self.features4(out)
+        time2 = time.time()
+        print("Time for loss conv: ", time2 - time1)
         # print('4')
         # print(out.shape)
+        time1 = time.time()
         out = self.features5(out)
+        time2 = time.time()
+        print("Time for feature 5: ", time2 - time1)
         # print('5')
-        print(out.shape)
+        time1 = time.time()
         out = out.view(out.size(0), -1)
-        print(out.shape)
         out = self.classifier(out)
+        time2 = time.time()
+        print("Time for flatten and classify: ", time2 - time1)
         return out
 
     def _make_layers(self, cfg, in_channels, relu_change=0):
@@ -348,9 +322,12 @@ class VGG(nn.Module):
 
 
 def test():
-    net = VGG('VGG16')
-    x = torch.randn(2, 3, 256, 256)
+    net = VGG('VGG16', '12345')
+    net = net.to('cuda')
+    net = torch.nn.DataParallel(net)
+    cudnn.benchmark = True
+    x = torch.randn(1, 3, 256, 256)
     y = net(x)
-    print(y.size())
 
-test()
+
+#test()
