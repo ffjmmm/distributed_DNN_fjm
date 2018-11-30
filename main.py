@@ -25,7 +25,7 @@ parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action="store_true", help='resume from checkpoint')
 parser.add_argument('--original', action="store_true", help='use original VGG')
 parser.add_argument('--dataset', type=str, default='ciffar10', help='choose the dataset')
-parser.add_argument('--print-freq', default=20, type=int, help='print frequency')
+parser.add_argument('--print_freq', default=20, type=int, help='print frequency')
 args = parser.parse_args()
 
 
@@ -131,7 +131,7 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-        if batch_idx % args.print-freq == 0:
+        if batch_idx % args.print_freq == 0:
             print('Epoch: %d [%d/%d]: loss = %f, acc = %f' % (epoch, batch_idx, len(train_loader), loss.item(),
                                                               predicted.eq(targets).sum().item() / targets.size(0)))
 
