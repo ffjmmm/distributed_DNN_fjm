@@ -10,7 +10,7 @@ import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
 
-from tensorboardX import SummaryWriter
+# from tensorboardX import SummaryWriter
 
 import os
 import argparse
@@ -45,7 +45,7 @@ def load_data():
 
 
 # Training
-def train(net, device, optimizer, criterion, epoch, train_loader, writer):
+def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
@@ -68,7 +68,7 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer):
         % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
 
-def test(net, device, criterion, epoch, test_loader, writer, best_acc):
+def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     net.eval()
     test_loss = 0
     correct = 0
@@ -92,7 +92,7 @@ def test(net, device, criterion, epoch, test_loader, writer, best_acc):
     # Save checkpoint.
     acc = 100. * correct / total
     print("%d : %f" % (epoch, acc))
-    writer.add_scalar('Acc', acc, epoch)
+    # writer.add_scalar('Acc', acc, epoch)
 
     if acc > best_acc:
         print('Saving..')
@@ -143,12 +143,14 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
-    writer = SummaryWriter('logs/distributed_DNN')
+    # writer = SummaryWriter('logs/distributed_DNN')
     train_loader, test_loader = load_data()
     for epoch in range(start_epoch, start_epoch+200):
-        train(net, device, optimizer, criterion, epoch, train_loader, writer)
-        best_acc = test(net, device, criterion, epoch, test_loader, writer, best_acc)
-    writer.close()
+        # train(net, device, optimizer, criterion, epoch, train_loader, writer)
+        # best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
+        train(net, device, optimizer, criterion, epoch, train_loader)
+        best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
+    # writer.close()
 
 
 if __name__ == '__main__':
