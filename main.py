@@ -1,11 +1,12 @@
 from __future__ import print_function
 
 import torch
-import numpy
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
+from PIL import Image, ImageEnhance
 
 import torchvision
 import torchvision.transforms as transforms
@@ -99,8 +100,10 @@ def load_data():
             ),
         ])
 
-        train_loader = torchvision.datasets.ImageFolder('./data/' + 'train_no_resizing', train_transform)
-        test_loader = torchvision.datasets.ImageFolder('./data/' + 'test', test_transform)
+        train_set = torchvision.datasets.ImageFolder('./data/' + 'train_no_resizing', train_transform)
+        train_loader = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True, num_workers=2)
+        test_set = torchvision.datasets.ImageFolder('./data/' + 'test', test_transform)
+        test_loader = torch.utils.data.DataLoader(test_set, batch_size=128, shuffle=False, num_workers=2)
 
     time_data_end = time.time()
     print("Preparing data spends %fs\n" % (time_data_end - time_data_start))
