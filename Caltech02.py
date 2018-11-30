@@ -1,6 +1,6 @@
 import os
 
-data_path = "./256_ObjectCategories"
+data_path = "./data/256_ObjectCategories"
 
 dirs = os.listdir(data_path)
 dirs.sort()
@@ -21,7 +21,8 @@ for d in dirs:
 with open(r'dataset-test.txt', 'w', encoding='utf-8') as f:
 	for i in range(len(Matrix)):
 		for j in range(10):
-			f.write(os.path.join(data_path, Matrix[i][j]))
+			f.write(Matrix[i][j])
+			# f.write(os.path.join(data_path, Matrix[i][j]))
 			f.write(' ')
 			f.write(str(i))
 			f.write('\n')
@@ -29,7 +30,8 @@ with open(r'dataset-test.txt', 'w', encoding='utf-8') as f:
 with open(r'dataset-train.txt', 'w', encoding='utf-8') as f:
 	for i in range(len(Matrix)):
 		for j in range(10, len(Matrix[i])):
-			f.write(os.path.join(data_path, Matrix[i][j]))
+			f.write(Matrix[i][j])
+			# f.write(os.path.join(data_path, Matrix[i][j]))
 			f.write(' ')
 			f.write(str(i))
 			f.write('\n')

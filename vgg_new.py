@@ -289,7 +289,9 @@ class VGG(nn.Module):
         # print("Time for feature 5: ", time2 - time1)
 
         # time1 = time.time()
-        out = out.view(out.size(0), -1)
+	print(out.shape)
+	out = out.view(out.size(0), -1)
+
         out = self.classifier(out)
         # time2 = time.time()
         # print("Time for flatten and classify: ", time2 - time1)

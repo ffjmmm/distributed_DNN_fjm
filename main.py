@@ -94,8 +94,8 @@ def load_data():
             transforms.Normalize(mean=mean, std=std),
         ])
 
-        train_data = MyDataset(txt='./data/' + 'dataset-train.txt', transform=transform)
-        test_data = MyDataset(txt='./data/' + 'dataset-test.txt', transform=transform)
+        train_data = MyDataset(txt='./dataset-train.txt', transform=transform)
+        test_data = MyDataset(txt='./dataset-test.txt', transform=transform)
         train_loader = DataLoader(dataset=train_data, batch_size=64, shuffle=True, num_workers=2)
         test_loader = DataLoader(dataset=test_data, batch_size=64, num_workers=2)
 
