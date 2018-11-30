@@ -4,6 +4,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import time
 
 cfg = {
     'VGG11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -279,11 +280,13 @@ class VGG(nn.Module):
 
     def forward(self, x):
         # split x
-
+        time1 = time.time()
+        print("input x shape: ", x.shape)
         (x1, x2) = torch.chunk(x, 2, 2)
         (x11, x12) = torch.chunk(x1, 2, 3)
         (x21, x22) = torch.chunk(x2, 2, 3)
-
+        time2 = time.time()
+        #print("Time to split: ", time2 - time1)
         # out = self.features1(x)
         # out = self.features2(out)
 
@@ -299,6 +302,7 @@ class VGG(nn.Module):
         out1 = torch.cat((out11, out12), 3)
         out2 = torch.cat((out21, out22), 3)
         out = torch.cat((out1, out2), 2)
+        print("out shape: ", out.shape)
         # this is the end of the split
 
         # for feature 3, we have the loss transmission
@@ -310,8 +314,9 @@ class VGG(nn.Module):
         # print(out.shape)
         out = self.features5(out)
         # print('5')
-        # print(out.shape)
+        print(out.shape)
         out = out.view(out.size(0), -1)
+        print(out.shape)
         out = self.classifier(out)
         return out
 
@@ -343,9 +348,9 @@ class VGG(nn.Module):
 
 
 def test():
-    net = VGG('VGG11')
-    x = torch.randn(2, 3, 32, 32)
+    net = VGG('VGG16')
+    x = torch.randn(2, 3, 256, 256)
     y = net(x)
     print(y.size())
 
-# test()
+test()
