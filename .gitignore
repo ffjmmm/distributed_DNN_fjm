@@ -1,4 +1,7 @@
 .DS_Store
-data/
+data/cifar-10-batches-py
+data/256_ObjectCategories
+data/cifar-10-python.tar.gz
 /__pycache__
 *.pyc
+/checkpoint
