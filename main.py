@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
+from torch.utils.data import Dataset, DataLoader
 from PIL import Image, ImageEnhance
 
 import torchvision
@@ -55,6 +56,52 @@ def load_data():
         classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
     else:
+        def default_loader(path):
+            return Image.open(path).convert('RGB')
+
+        class MyDataset(Dataset):
+            def __init__(self, txt, transform=None, target_transform=None, loader=default_loader):
+                fh = open(txt, 'r')
+                imgs = []
+                for line in fh:
+                    line = line.rstrip()
+                    line = line.strip('\n')
+                    line = line.rstrip()
+                    words = line.split()
+                    imgs.append((words[0], int(words[1])))
+                self.imgs = imgs
+                self.transform = transform
+                self.target_transform = target_transform
+                self.loader = loader
+
+            def __getitem__(self, index):
+                fn, label = self.imgs[index]
+                img = self.loader(fn)
+                if self.transform is not None:
+                    img = self.transform(img)
+                return img, label
+
+            def __len__(self):
+                return len(self.imgs)
+
+        mean = [0.485, 0.456, 0.406]
+        std = [0.229, 0.224, 0.225]
+
+        transform = transforms.Compose([
+            transforms.Scale(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=mean, std=std),
+        ])
+
+        train_data = MyDataset(txt='./data/' + 'dataset-train.txt', transform=transform)
+        test_data = MyDataset(txt='./data/' + 'dataset-test.txt', transform=transform)
+        train_loader = DataLoader(dataset=train_data, batch_size=64, shuffle=True, num_workers=2)
+        test_loader = DataLoader(dataset=test_data, batch_size=64, num_workers=2)
+
+
+
+        '''
         enhancers = {
             0: lambda image, f: ImageEnhance.Color(image).enhance(f),
             1: lambda image, f: ImageEnhance.Contrast(image).enhance(f),
@@ -104,6 +151,7 @@ def load_data():
         train_loader = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True, num_workers=2)
         test_set = torchvision.datasets.ImageFolder('./data/' + 'test', test_transform)
         test_loader = torch.utils.data.DataLoader(test_set, batch_size=128, shuffle=False, num_workers=2)
+        '''
 
     time_data_end = time.time()
     print("Preparing data spends %fs\n" % (time_data_end - time_data_start))
