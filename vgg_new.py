@@ -241,7 +241,7 @@ class VGG(nn.Module):
         if dataset == 'ciffar10':
             self.classifier = nn.Linear(512, 10)
         else:
-            self.classifier = nn.Linear(32768, 256)
+            self.classifier = nn.Linear(25088, 257)
 
     def forward(self, x):
         # split x
@@ -289,7 +289,7 @@ class VGG(nn.Module):
         # print("Time for feature 5: ", time2 - time1)
 
         # time1 = time.time()
-        print(out.shape)
+        # print(out.shape)
         out = out.view(out.size(0), -1)
 
         out = self.classifier(out)
