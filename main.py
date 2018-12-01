@@ -175,6 +175,8 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
+        time2 = time.time()
+        print("forward time = ", time2 - time1)
         loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
@@ -188,9 +190,9 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
             print('Epoch: %d [%d/%d]: loss = %f, acc = %f' % (epoch, batch_idx, len(train_loader), loss.item(),
                                                               predicted.eq(targets).sum().item() / targets.size(0)))
 
-        time2 = time.time()
-        print("time = ", time2 - time1)
-        if (batch_idx + 1) % 5 == 0:
+        time1 = time.time()
+        print("backward time = ", time1 - time2)
+        if (batch_idx + 1) % 10 == 0:
             break
 
 
