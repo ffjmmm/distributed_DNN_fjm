@@ -230,15 +230,17 @@ class Quant_ReLU(nn.Module):
 
 
 class VGG(nn.Module):
-    def __init__(self, vgg_name, dataset):
+    def __init__(self, vgg_name, dataset, original):
         super(VGG, self).__init__()
         # only accept VGG16
         self.features1 = self._make_layers(cfg['VGG16_1'], 3)
         self.features2 = self._make_layers(cfg['VGG16_2'], 64)
-        # self.features3 = self._make_layers(cfg['VGG16_3'], 128)
-        # self.features4 = self._make_layers(cfg['VGG16_4'], 256)
-        self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128)
-        self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256)
+        if original:
+            self.features3 = self._make_layers(cfg['VGG16_3'], 128)
+            self.features4 = self._make_layers(cfg['VGG16_4'], 256)
+        else :
+            self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128)
+            self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256)
         self.features5 = self._make_layers(cfg['VGG16_5'], 512)
         if dataset == 'ciffar10':
             self.classifier = nn.Linear(512, 10)
