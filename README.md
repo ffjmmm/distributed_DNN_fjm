@@ -6,7 +6,7 @@
 
 3. Use ```python3 main.py``` to run. Use ```python3 main.py --help``` to see some parameters.
 
-4. There are 5 features in the VGG model. We first divide the input *x* into 4 parts: *x11, x12, x21, x22*, and then apply the feature 1 and feature 2 on *x11, x12, x21, x22*. Then, in the feature 3 and feature 4, we use lossy conv2d to mimic the loss of the edge pixels. Third, we put the small parts together, and apply the feature 5. Finally, we flatten the matrix and use a FC layer to do the classify. Here, I compare the time that each feature spends.
+4. There are 5 features in the VGG model. We first divide the input *x* into 4 parts: *x11, x12, x21, x22*, and then apply the feature 1 and feature 2 on *x11, x12, x21, x22*. Then, in the feature 3 and feature 4, we use lossy conv2d to mimic the loss of the edge pixels. Third, we put the small parts together, and apply the feature 5. Finally, we flatten the matrix and use a FC layer to do the classify. Here, I compare the time that each feature spends in forward.
 	
 	+ Use lossy_conv2d _new, batch size is 64.
 	![](results/layer_time/new_lossy_conv.png)
@@ -31,6 +31,9 @@
 	
 	2. The **new** lossy conv2d only takes half the time of the **old** lossy conv2d, and significantly reduces memory usage.
 
-5. The training is really slow. I'm a little confused about adjusting the parameters.....
+5. However, when I use lossy conv2d to train the model, I found it's much slower than the model without lossy conv2d. 
+
+
+6. The training is really slow. I'm a little confused about adjusting the parameters.....
 	
 	

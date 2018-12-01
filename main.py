@@ -186,9 +186,11 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
+        '''
         if batch_idx % args.print_freq == 0:
             print('Epoch: %d [%d/%d]: loss = %f, acc = %f' % (epoch, batch_idx, len(train_loader), loss.item(),
-                                                              predicted.eq(targets).sum().item() / targets.size(0)))
+                                                            predicted.eq(targets).sum().item() / targets.size(0)))
+        '''
 
         time1 = time.time()
         print("backward time = ", time1 - time2)
