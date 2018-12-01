@@ -96,7 +96,7 @@ def load_data():
 
         train_data = MyDataset(txt='./dataset-train.txt', transform=transform)
         test_data = MyDataset(txt='./dataset-test.txt', transform=transform)
-        train_loader = DataLoader(dataset=train_data, batch_size=64, shuffle=True, num_workers=2)
+        train_loader = DataLoader(dataset=train_data, batch_size=128, shuffle=True, num_workers=1)
         test_loader = DataLoader(dataset=test_data, batch_size=64, num_workers=2)
 
 
@@ -179,9 +179,11 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
+        break
         if batch_idx % args.print_freq == 0:
             print('Epoch: %d [%d/%d]: loss = %f, acc = %f' % (epoch, batch_idx, len(train_loader), loss.item(),
                                                               predicted.eq(targets).sum().item() / targets.size(0)))
+
 
 
 def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
@@ -255,11 +257,11 @@ def main():
 
     # writer = SummaryWriter('logs/distributed_DNN')
     train_loader, test_loader = load_data()
-    for epoch in range(start_epoch, start_epoch+200):
+    for epoch in range(start_epoch, start_epoch+5):
         # train(net, device, optimizer, criterion, epoch, train_loader, writer)
         # best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
         train(net, device, optimizer, criterion, epoch, train_loader)
-        best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
+        #best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
     # writer.close()
 
 
