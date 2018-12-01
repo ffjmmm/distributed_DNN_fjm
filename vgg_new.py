@@ -277,7 +277,7 @@ class VGG(nn.Module):
         out = self.features3(out)
         out = self.features4(out)
         time2 = time.time()
-        print("Time for feature 4 and 5, loss conv: ", time2 - time1)
+        print("Time for feature 3 and 4, loss conv: ", time2 - time1)
         # print('4')
         # print(out.shape)
         time1 = time.time()
@@ -322,12 +322,14 @@ class VGG(nn.Module):
 
 
 def test():
-    net = VGG('VGG16', '12345')
+    net = VGG('VGG16', 'Caltech256')
     net = net.to('cuda')
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
-    x = torch.randn(1, 3, 256, 256)
-    y = net(x)
+    for i in range(5):
+        print("test %d :", i)
+        x = torch.randn(64, 3, 224, 224)
+        y = net(x)
 
 
-#test()
+test()
