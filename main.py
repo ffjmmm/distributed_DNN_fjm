@@ -23,10 +23,13 @@ import vgg_new
 
 parser = argparse.ArgumentParser(description='PyTorch Training')
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
+parser.add_argument('--batch_size', '-bs', default=64, type=int, help='set batch size')
 parser.add_argument('--resume', '-r', action="store_true", help='resume from checkpoint')
 parser.add_argument('--original', action="store_true", help='use original VGG')
 parser.add_argument('--dataset', type=str, default='Caltech256', help='choose the dataset')
 parser.add_argument('--print_freq', default=20, type=int, help='print frequency')
+parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
+parser.add_argument('--weight_decay', default=5e-4, type=float, help='weight decay')
 args = parser.parse_args()
 
 
@@ -96,8 +99,8 @@ def load_data():
 
         train_data = MyDataset(txt='./dataset-train.txt', transform=transform)
         test_data = MyDataset(txt='./dataset-test.txt', transform=transform)
-        train_loader = DataLoader(dataset=train_data, batch_size=16, shuffle=True, num_workers=2)
-        test_loader = DataLoader(dataset=test_data, batch_size=16, num_workers=2)
+        train_loader = DataLoader(dataset=train_data, batch_size=64, shuffle=True, num_workers=2)
+        test_loader = DataLoader(dataset=test_data, batch_size=64, num_workers=2)
 
 
 
@@ -204,7 +207,7 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
 
     # Save checkpoint.
     acc = 100. * correct / total
-    print("%d : %f" % (epoch, acc))
+    print("Epoch %d finish, test acc : %f" % (epoch, acc))
     # writer.add_scalar('Acc', acc, epoch)
 
     if acc > best_acc:
@@ -252,10 +255,11 @@ def main():
     print("Building model spends %fs\n" % (time_buildmodel_end - time_buildmodel_start))
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
+    optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
     # writer = SummaryWriter('logs/distributed_DNN')
     train_loader, test_loader = load_data()
+    print('==> Training..')
     for epoch in range(start_epoch, start_epoch+200):
         # train(net, device, optimizer, criterion, epoch, train_loader, writer)
         # best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
