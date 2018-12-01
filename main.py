@@ -190,7 +190,7 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
 
         time2 = time.time()
         print("time = ", time2 - time1)
-        if batch_idx % 5 == 0:
+        if (batch_idx + 1) % 5 == 0:
             break
 
 
