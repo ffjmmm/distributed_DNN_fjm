@@ -313,7 +313,7 @@ class VGG(nn.Module):
             if x == 'M':
                 layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
             else:
-                layers += [lossy_Conv2d(in_channels, x, kernel_size=3, padding=1),
+                layers += [lossy_Conv2d_new(in_channels, x, kernel_size=3, padding=1),
                            nn.BatchNorm2d(x, affine=False),
                            Quant_ReLU(lower_bound=.5, upper_bound=.8, num_bits=4.)]
                 in_channels = x
@@ -326,7 +326,7 @@ def test():
     net = net.to('cuda')
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
-    x = torch.randn(64, 3, 224, 224)
+    x = torch.randn(32, 3, 224, 224)
     y = net(x)
 
 
