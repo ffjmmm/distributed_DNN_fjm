@@ -266,7 +266,9 @@ def main():
         # best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
         time1 = time.time()
         train(net, device, optimizer, criterion, epoch, train_loader)
-        best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
+        time2 = time.time()
+        print("time = ", time2 - time1)
+        # best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
     # writer.close()
 
 
