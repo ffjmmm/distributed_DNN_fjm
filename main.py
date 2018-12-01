@@ -231,7 +231,7 @@ def main():
     start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
     print('==> Building model..')
-    print("lr = %f", args.lr)
+    print("lr = ", args.lr)
     time_buildmodel_start = time.time()
     net = vgg_new.VGG('VGG16', args.dataset, args.original)
     time_buildmodel_end = time.time()
