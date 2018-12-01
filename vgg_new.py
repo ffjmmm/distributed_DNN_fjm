@@ -324,12 +324,10 @@ class VGG(nn.Module):
 def test():
     net = VGG('VGG16', 'Caltech256')
     net = net.to('cuda')
-    net = torch.nn.DataParallel(net)
+    # net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
-    for i in range(5):
-        print("test %d :", i)
-        x = torch.randn(64, 3, 224, 224)
-        y = net(x)
+    x = torch.randn(64, 3, 224, 224)
+    y = net(x)
 
 
 test()
