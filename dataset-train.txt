@@ -20566,7 +20566,6 @@
 ./data/256_ObjectCategories/198.spider/198_0098.jpg 197
 ./data/256_ObjectCategories/198.spider/198_0074.jpg 197
 ./data/256_ObjectCategories/198.spider/198_0108.jpg 197
-./data/256_ObjectCategories/198.spider/RENAME2 197
 ./data/256_ObjectCategories/198.spider/198_0060.jpg 197
 ./data/256_ObjectCategories/198.spider/198_0028.jpg 197
 ./data/256_ObjectCategories/198.spider/198_0080.jpg 197
