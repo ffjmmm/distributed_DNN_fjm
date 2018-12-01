@@ -235,10 +235,10 @@ class VGG(nn.Module):
         # only accept VGG16
         self.features1 = self._make_layers(cfg['VGG16_1'], 3)
         self.features2 = self._make_layers(cfg['VGG16_2'], 64)
-        self.features3 = self._make_layers(cfg['VGG16_3'], 128)
-        self.features4 = self._make_layers(cfg['VGG16_4'], 256)
-        # self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128)
-        # self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256)
+        # self.features3 = self._make_layers(cfg['VGG16_3'], 128)
+        # self.features4 = self._make_layers(cfg['VGG16_4'], 256)
+        self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128)
+        self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256)
         self.features5 = self._make_layers(cfg['VGG16_5'], 512)
         if dataset == 'ciffar10':
             self.classifier = nn.Linear(512, 10)
@@ -247,7 +247,7 @@ class VGG(nn.Module):
 
     def forward(self, x):
         # split x
-        time1 = time.time()
+        # time1 = time.time()
         (x1, x2) = torch.chunk(x, 2, 2)
         (x11, x12) = torch.chunk(x1, 2, 3)
         (x21, x22) = torch.chunk(x2, 2, 3)
@@ -264,31 +264,31 @@ class VGG(nn.Module):
         out1 = torch.cat((out11, out12), 3)
         out2 = torch.cat((out21, out22), 3)
         out = torch.cat((out1, out2), 2)
-        time2 = time.time()
-        print("Time for feature 1 and 2: ", time2 - time1)
+        # time2 = time.time()
+        # print("Time for feature 1 and 2: ", time2 - time1)
 
         # this is the end of the split
 
         # for feature 3, we have the loss transmission
         # mask = mask_matrix((out.shape[3],out.shape[2],out.shape[1],out.shape[0]),(2,2),0.5)
         # one_mask = one_mask_matrix((out.shape[3],out.shape[2],out.shape[1],out.shape[0]),(2,2),0.5)
-        time1 = time.time()
+        # time1 = time.time()
         out = self.features3(out)
         out = self.features4(out)
-        time2 = time.time()
-        print("Time for feature 3 and 4, loss conv: ", time2 - time1)
+        # time2 = time.time()
+        # print("Time for feature 3 and 4, loss conv: ", time2 - time1)
 
-        time1 = time.time()
+        # time1 = time.time()
         out = self.features5(out)
-        time2 = time.time()
-        print("Time for feature 5: ", time2 - time1)
+        # time2 = time.time()
+        # print("Time for feature 5: ", time2 - time1)
 
-        time1 = time.time()
+        # time1 = time.time()
         # print(out.shape)
         out = out.view(out.size(0), -1)
         out = self.classifier(out)
-        time2 = time.time()
-        print("Time for flatten and classify: ", time2 - time1)
+        # time2 = time.time()
+        # print("Time for flatten and classify: ", time2 - time1)
         return out
 
     def _make_layers(self, cfg, in_channels, relu_change=0):
