@@ -30,6 +30,7 @@ parser.add_argument('--dataset', type=str, default='Caltech256', help='choose th
 parser.add_argument('--print_freq', default=20, type=int, help='print frequency')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='weight decay')
+parser.add_argument('--epoch', default=200, type=int, help='training epoch')
 args = parser.parse_args()
 
 
@@ -186,6 +187,8 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
             print('Epoch: %d [%d/%d]: loss = %f, acc = %f' % (epoch, batch_idx, len(train_loader), loss.item(),
                                                               predicted.eq(targets).sum().item() / targets.size(0)))
 
+        break
+
 
 
 def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
@@ -258,9 +261,10 @@ def main():
     # writer = SummaryWriter('logs/distributed_DNN')
     train_loader, test_loader = load_data()
     print('==> Training..')
-    for epoch in range(start_epoch, start_epoch+200):
+    for epoch in range(start_epoch, start_epoch + args.epoch):
         # train(net, device, optimizer, criterion, epoch, train_loader, writer)
         # best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
+        time1 = time.time()
         train(net, device, optimizer, criterion, epoch, train_loader)
         best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
     # writer.close()
