@@ -235,8 +235,10 @@ class VGG(nn.Module):
         # only accept VGG16
         self.features1 = self._make_layers(cfg['VGG16_1'], 3)
         self.features2 = self._make_layers(cfg['VGG16_2'], 64)
-        self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128)
-        self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256)
+        self.features3 = self._make_layers(cfg['VGG16_3'], 128)
+        self.features4 = self._make_layers(cfg['VGG16_4'], 256)
+        # self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128)
+        # self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256)
         self.features5 = self._make_layers(cfg['VGG16_5'], 512)
         if dataset == 'ciffar10':
             self.classifier = nn.Linear(512, 10)
@@ -326,8 +328,8 @@ def test():
     net = net.to('cuda')
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
-    x = torch.randn(32, 3, 224, 224)
+    x = torch.randn(64, 3, 224, 224)
     y = net(x)
 
 
-# test()
+test()
