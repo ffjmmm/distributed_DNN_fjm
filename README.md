@@ -31,7 +31,15 @@
 	
 	2. The **new** lossy conv2d only takes half the time of the **old** lossy conv2d, and significantly reduces memory usage.
 
-5. However, when I use lossy conv2d to train the model, I found it's much slower than the model without lossy conv2d. 
+5. However, when I use lossy conv2d to train the model, I found it's much slower than the model without lossy conv2d. Then I print the forward time and backward time for each batch.
+	
+	+ Result for the model with lossy conv2d
+	![](results/layer_time/batch_time_lossy.png)
+	
+	+ Result for the model without lossy conv2d
+	![](results/layer_time/batch_time_normal.png)
+
+	At the first forward and backward process, they spend almost the same amount of time. However, for the following processes, the model with lossy conv2d really spends much more time than the model without lossy conv2d.
 
 
 6. The training is really slow. I'm a little confused about adjusting the parameters.....
