@@ -197,7 +197,7 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
 
         if (batch_idx + 1) % 5 == 0:
             break
-        
+
 
 
 def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
