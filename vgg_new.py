@@ -55,45 +55,52 @@ class lossy_Conv2d_new(nn.Module):
                 rand = torch.FloatTensor(1, l_j).uniform_() > alpha
                 # rand = torch.FloatTensor(dim[0], dim[1], 1, l_j).uniform_() > alpha
                 rand = rand.float()
-                x_split[:, :, 0, 1: l_j + 1] = x[:, :, i_s - 1, j_s: j_e] * rand[:, :, 0, :].cuda()
+                x_split[:, :, 0, 1: l_j + 1] = x[:, :, i_s - 1, j_s: j_e] * rand[0, :].cuda()
+                # x_split[:, :, 0, 1: l_j + 1] = x[:, :, i_s - 1, j_s: j_e] * rand[:, :, 0, :].cuda()
             if i_e < dim[2]:
                 rand = torch.FloatTensor(1, l_j).uniform_() > alpha
                 # rand = torch.FloatTensor(dim[0], dim[1], 1, l_j).uniform_() > alpha
                 rand = rand.float()
-                # print(x[0, 0, i_e, j_s: j_e], rand[0, 0, 0, :])
-                x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * rand[:, :, 0, :].cuda()
+                x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * rand[0, :].cuda()
+                # x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * rand[:, :, 0, :].cuda()
             if j_s > 0:
                 rand = torch.FloatTensor(l_i, 1).uniform_() > alpha
                 # rand = torch.FloatTensor(dim[0], dim[1], l_i, 1).uniform_() > alpha
                 rand = rand.float()
-                x_split[:, :, 1: l_i + 1, 0] = x[:, :, i_s: i_e, j_s - 1] * rand[:, :, :, 0].cuda()
+                x_split[:, :, 1: l_i + 1, 0] = x[:, :, i_s: i_e, j_s - 1] * rand[:, 0].cuda()
+                # x_split[:, :, 1: l_i + 1, 0] = x[:, :, i_s: i_e, j_s - 1] * rand[:, :, :, 0].cuda()
             if j_e < dim[3]:
                 rand = torch.FloatTensor(l_i, 1).uniform_() > alpha
                 # rand = torch.FloatTensor(dim[0], dim[1], l_i, 1).uniform_() > alpha
                 rand = rand.float()
-                x_split[:, :, 1: l_i + 1, l_j + 1] = x[:, :, i_s: i_e, j_e] * rand[:, :, :, 0].cuda()
+                x_split[:, :, 1: l_i + 1, l_j + 1] = x[:, :, i_s: i_e, j_e] * rand[:, 0].cuda()
+                # x_split[:, :, 1: l_i + 1, l_j + 1] = x[:, :, i_s: i_e, j_e] * rand[:, :, :, 0].cuda()
 
             # Four corner
             if i_s > 0 and j_s > 0:
                 rand = torch.FloatTensor(1, 1).uniform_() > alpha
                 # rand = torch.FloatTensor(dim[0], dim[1], 1, 1).uniform_() > alpha
                 rand = rand.float()
-                x_split[:, :, 0, 0] = x[:, :, i_s - 1, j_s - 1] * rand[:, :, 0, 0].cuda()
+                x_split[:, :, 0, 0] = x[:, :, i_s - 1, j_s - 1] * rand[0, 0].cuda()
+                # x_split[:, :, 0, 0] = x[:, :, i_s - 1, j_s - 1] * rand[:, :, 0, 0].cuda()
             if i_e < dim[2] and j_s > 0:
                 rand = torch.FloatTensor(1, 1).uniform_() > alpha
                 # rand = torch.FloatTensor(dim[0], dim[1], 1, 1).uniform_() > alpha
                 rand = rand.float()
-                x_split[:, :, l_i + 1, 0] = x[:, :, i_e, j_s - 1] * rand[:, :, 0, 0].cuda()
+                x_split[:, :, l_i + 1, 0] = x[:, :, i_e, j_s - 1] * rand[0, 0].cuda()
+                # x_split[:, :, l_i + 1, 0] = x[:, :, i_e, j_s - 1] * rand[:, :, 0, 0].cuda()
             if i_s > 0 and j_e < dim[3]:
                 rand = torch.FloatTensor(1, 1).uniform_() > alpha
                 # rand = torch.FloatTensor(dim[0], dim[1], 1, 1).uniform_() > alpha
                 rand = rand.float()
-                x_split[:, :, 0, l_j + 1] = x[:, :, i_s - 1, j_e] * rand[:, :, 0, 0].cuda()
+                x_split[:, :, 0, l_j + 1] = x[:, :, i_s - 1, j_e] * rand[0, 0].cuda()
+                # x_split[:, :, 0, l_j + 1] = x[:, :, i_s - 1, j_e] * rand[:, :, 0, 0].cuda()
             if i_e < dim[2] and j_e < dim[3]:
                 rand = torch.FloatTensor(1, 1).uniform_() > alpha
                 # rand = torch.FloatTensor(dim[0], dim[1], 1, 1).uniform_() > alpha
                 rand = rand.float()
-                x_split[:, :, l_i + 1, l_j + 1] = x[:, :, i_e, j_e] * rand[:, :, 0, 0].cuda()
+                x_split[:, :, l_i + 1, l_j + 1] = x[:, :, i_e, j_e] * rand[0, 0].cuda()
+                # x_split[:, :, l_i + 1, l_j + 1] = x[:, :, i_e, j_e] * rand[:, :, 0, 0].cuda()
 
             return x_split.cuda()
 
