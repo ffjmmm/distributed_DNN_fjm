@@ -87,7 +87,7 @@ class lossy_Conv2d_new(nn.Module):
                 rand = rand.float()
                 x_split[:, :, l_i + 1, l_j + 1] = x[:, :, i_e, j_e] * rand[:, :, 0, 0].cuda()
 
-            return x_split.cuda()
+            return x_split
 
         def combine(x, pieces=(2, 2), dim=(4, 4, 12, 12)):
             dim_split = x[0][0].shape
@@ -101,7 +101,7 @@ class lossy_Conv2d_new(nn.Module):
                 for j in range(pieces[1]):
                     res[:, :, i * l_i: (i + 1) * l_i, j * l_j: (j + 1) * l_j] = x[i][j][:, :, i_s: i_s + l_i, j_s: j_s + l_j]
 
-            return res.cuda()
+            return res
 
         x_split = []
         for i in range(self.pieces[0]):
