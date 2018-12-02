@@ -103,6 +103,7 @@ class lossy_Conv2d_new(nn.Module):
 
             return res.cuda()
 
+        time1 = time.time()
         x_split = []
         for i in range(self.pieces[0]):
             dummy = []
@@ -110,7 +111,10 @@ class lossy_Conv2d_new(nn.Module):
                 xx = split(x, self.pieces, i, j)
                 dummy.append(xx)
             x_split.append(dummy)
+        time2 = time.time()
+        print("split time = ", time2 - time1)
 
+        time1 = time.time()
         r = []
         for i in range(self.pieces[0]):
             dummy = []
@@ -118,8 +122,13 @@ class lossy_Conv2d_new(nn.Module):
                 rr = self.b1(x_split[i][j])
                 dummy.append(rr)
             r.append(dummy)
+        time2 = time.time()
+        print("conv time = ", time2 - time1)
 
+        time1 = time.time()
         r_combine = combine(r, self.pieces, x.shape)
+        time2 = time.time()
+        print("combine time = ")
         return r_combine
 
 
