@@ -92,7 +92,7 @@ class lossy_Conv2d_new(nn.Module):
 
             return x_split.cuda()
         '''
-        '''
+
         def split(x, pieces):
             
             dim = x.shape
@@ -110,50 +110,18 @@ class lossy_Conv2d_new(nn.Module):
             x22.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], dim[3] // pieces[1] - 1:dim[3]])
 
             alpha = 0.5
-
-            x11 = F.dropout(x11, p=0.5, training=True)
-            x12 = F.dropout(x12, p=0.5, training=True)
-            x21 = F.dropout(x21, p=0.5, training=True)
-            x22 = F.dropout(x22, p=0.5, training=True)
-
-            x11 = F.pad(x11, (1, 0, 1, 0, 0, 0, 0, 0))
-            x12 = F.pad(x12, (0, 1, 1, 0, 0, 0, 0, 0))
-            x21 = F.pad(x21, (1, 0, 0, 1, 0, 0, 0, 0))
-            x22 = F.pad(x22, (0, 1, 0, 1, 0, 0, 0, 0))
-
-            x11[:, :, 1: dim[2] // pieces[0] + 1, 1: dim[3] // pieces[1] + 1] = \
-                x[:, :, 0: dim[2] // pieces[0], 0: dim[3] // pieces[1]]
-            x12[:, :, 1: dim[2] // pieces[0] + 1, 1: dim[3] // pieces[1] + 1] = \
-                x[:, :, 0: dim[2] // pieces[0], dim[3] // pieces[1]: dim[3]]
-            x21[:, :, 1: dim[2] // pieces[0] + 1, 1: dim[3] // pieces[1] + 1] = \
-                x[:, :, dim[2] // pieces[0]: dim[2], 0: dim[3] // pieces[1]]
-            x22[:, :, 1: dim[2] // pieces[0] + 1, 1: dim[3] // pieces[1] + 1] = \
-                x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]]
-
-            return x11.cuda(), x12.cuda(), x21.cuda(), x22.cuda()
-        '''
-
-        def split(x, pieces):
-            dim = x.shape
-            x11 = x[:, :, 0: dim[2] // 2, 0: dim[3] // 2]
-            x12 = x[:, :, 0: dim[2] // 2, dim[3] // 2: dim[3]]
-            x21 = x[:, :, dim[2] // 2: dim[2], 0: dim[3] // 2]
-            x22 = x[:, :, dim[2] // 2: dim[2], dim[3] // 2: dim[3]]
-
-            x11 = F.pad(x11, (1, 1, 1, 1, 0, 0, 0, 0))
-            x12 = F.pad(x12, (1, 1, 1, 1, 0, 0, 0, 0))
-            x21 = F.pad(x21, (1, 1, 1, 1, 0, 0, 0, 0))
-            x22 = F.pad(x22, (1, 1, 1, 1, 0, 0, 0, 0))
-
-
-            alpha = 0.5
-            rand = torch.FloatTensor(4, dim[0], dim[1], dim[2] // 2 + 2, dim[3] // 2 + 2).uniform_() > alpha
+            rand = torch.FloatTensor(4, dim[0], dim[1], dim[2] // 2 + 1, dim[3] // 2 + 1).uniform_() > alpha
             rand = rand.float()
             x11 = x11 * rand[0].cuda()
             x12 = x12 * rand[1].cuda()
             x21 = x21 * rand[2].cuda()
             x22 = x22 * rand[3].cuda()
             '''
+            x11 = F.dropout(x11, p=0.5, training=True)
+            x12 = F.dropout(x12, p=0.5, training=True)
+            x21 = F.dropout(x21, p=0.5, training=True)
+            x22 = F.dropout(x22, p=0.5, training=True)
+            '''
             x11 = F.pad(x11, (1, 0, 1, 0, 0, 0, 0, 0))
             x12 = F.pad(x12, (0, 1, 1, 0, 0, 0, 0, 0))
             x21 = F.pad(x21, (1, 0, 0, 1, 0, 0, 0, 0))
@@ -167,9 +135,8 @@ class lossy_Conv2d_new(nn.Module):
                 x[:, :, dim[2] // pieces[0]: dim[2], 0: dim[3] // pieces[1]]
             x22[:, :, 1: dim[2] // pieces[0] + 1, 1: dim[3] // pieces[1] + 1] = \
                 x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]]
-            '''
-            return x11.cuda(), x12.cuda(), x21.cuda(), x22.cuda()
 
+            return x11.cuda(), x12.cuda(), x21.cuda(), x22.cuda()
 
         x11, x12, x21, x22 = split(x, self.pieces)
         '''
