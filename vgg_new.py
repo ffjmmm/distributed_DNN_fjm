@@ -172,7 +172,7 @@ class lossy_Conv2d_new(nn.Module):
         '''
 
         time1 = time.time()
-        '''
+
         (x1, x2) = torch.chunk(x, 2, 2)
         (x11, x12) = torch.chunk(x1, 2, 3)
         (x21, x22) = torch.chunk(x2, 2, 3)
@@ -180,7 +180,7 @@ class lossy_Conv2d_new(nn.Module):
         x1, x2 = rearrange(x, 'b c (split h) w -> split b c h w', split=2)
         x11, x12 = rearrange(x1, 'b c h (split w) -> split b c h w', split=2)
         x21, x22 = rearrange(x2, 'b c h (split w) -> split b c h w', split=2)
-        
+        '''
         time2 = time.time()
         print("split time = ", time2 - time1)
 
