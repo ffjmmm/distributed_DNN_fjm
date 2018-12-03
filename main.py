@@ -171,12 +171,12 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
     correct = 0
     total = 0
     for batch_idx, (inputs, targets) in enumerate(train_loader):
-        time1 = time.time()
+        # time1 = time.time()
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
-        time2 = time.time()
-        print(">>>>>>>>>>forward time = ", time2 - time1, ">>>>>>>>>>>>>")
+        # time2 = time.time()
+        # print(">>>>>>>>>>forward time = ", time2 - time1, ">>>>>>>>>>>>>")
         loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
@@ -186,18 +186,17 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-        '''
         if batch_idx % args.print_freq == 0:
             print('Epoch: %d [%d/%d]: loss = %f, acc = %f' % (epoch, batch_idx, len(train_loader), loss.item(),
                                                              predicted.eq(targets).sum().item() / targets.size(0)))
-        '''
 
+        '''
         time1 = time.time()
         print(">>>>>>>>>>>backward time = ", time1 - time2)
 
         if (batch_idx + 1) % 5 == 0:
             break
-
+        '''
 
 
 def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
@@ -274,7 +273,7 @@ def main():
         # train(net, device, optimizer, criterion, epoch, train_loader, writer)
         # best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
         train(net, device, optimizer, criterion, epoch, train_loader)
-        # best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
+        best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
     # writer.close()
 
 
