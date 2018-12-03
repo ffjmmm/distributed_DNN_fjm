@@ -32,11 +32,11 @@ class lossy_Conv2d_new(nn.Module):
             # use the parameters instead of numbers
             nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding)
         )
-        self.rand1 = torch.FloatTensor(32, 512, 30, 2).uniform_() > 0.5
+        self.rand1 = torch.FloatTensor(64, 512, 30, 2).uniform_() > 0.5
         self.rand1 = self.rand1.float()
-        self.rand2 = torch.FloatTensor(32, 512, 2, 30).uniform_() > 0.5
+        self.rand2 = torch.FloatTensor(64, 512, 2, 30).uniform_() > 0.5
         self.rand2 = self.rand2.float()
-        self.rand3 = torch.FloatTensor(32, 512, 2, 2).uniform_() > 0.5
+        self.rand3 = torch.FloatTensor(64, 512, 2, 2).uniform_() > 0.5
         self.rand3 = self.rand3.float()
 
     def forward(self, x):
@@ -140,6 +140,7 @@ class lossy_Conv2d_new(nn.Module):
 
             return res.cuda()
 
+        time1 = time.time()
         x_split = []
         for i in range(self.pieces[0]):
             dummy = []
@@ -147,7 +148,10 @@ class lossy_Conv2d_new(nn.Module):
                 xx = split(x, self.pieces, i, j)
                 dummy.append(xx)
             x_split.append(dummy)
+        time2 = time.time()
+        print("split time : ", time2 - time1)
 
+        time1 = time.time()
         r = []
         for i in range(self.pieces[0]):
             dummy = []
@@ -155,8 +159,13 @@ class lossy_Conv2d_new(nn.Module):
                 rr = self.b1(x_split[i][j])
                 dummy.append(rr)
             r.append(dummy)
+        time2 = time.time()
+        print("conv time : ", time2 - time1)
 
+        time1 = time.time()
         r_combine = combine(r, self.pieces, x.shape)
+        time2 = time.time()
+        print("combine time : ", time2 - time1)
         return r_combine
 
 
