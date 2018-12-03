@@ -34,10 +34,13 @@ class lossy_Conv2d_new(nn.Module):
         )
         self.rand1 = torch.FloatTensor(64, 512, 30, 2).uniform_() > 0.5
         self.rand1 = self.rand1.float()
+        self.rand1 = self.rand1.cuda()
         self.rand2 = torch.FloatTensor(64, 512, 2, 30).uniform_() > 0.5
         self.rand2 = self.rand2.float()
+        self.rand2 = self.rand2.cuda()
         self.rand3 = torch.FloatTensor(64, 512, 2, 2).uniform_() > 0.5
         self.rand3 = self.rand3.float()
+        self.rand3 = self.rand3.cuda()
 
     def forward(self, x):
         # print("x shape : ", x.shape)
