@@ -169,6 +169,7 @@ class lossy_Conv2d_new(nn.Module):
         # print("combine time : ", time2 - time1)
         return r_combine
         '''
+        x = split(x, (1, 1), 0, 0)
         x = self.b1(x)
         return x
 
