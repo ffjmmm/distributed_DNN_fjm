@@ -224,7 +224,7 @@ class lossy_Conv2d_new(nn.Module):
             x21 = F.pad(x21, (1, 0, 0, 1, 0, 0, 0, 0))
             x22 = F.pad(x22, (0, 1, 0, 1, 0, 0, 0, 0))
 
-            return x11, x12, x21, x22
+            return x11.cuda(), x12.cuda(), x21.cuda(), x22.cuda()
 
         time1 = time.time()
         x11, x12, x21, x22 = split(x, self.pieces)
