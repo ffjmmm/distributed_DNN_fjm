@@ -24,7 +24,7 @@ cfg = {
 
 # new lossy_Conv2d without mask matrix
 class lossy_Conv2d_new(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, padding=1, num_pieces=(2, 2)):
+    def __init__(self, in_channels, out_channels, kernel_size=3, padding=0, num_pieces=(2, 2)):
         super(lossy_Conv2d_new, self).__init__()
 
         # for each pieces, define a new conv operation
@@ -42,6 +42,12 @@ class lossy_Conv2d_new(nn.Module):
 
     def forward(self, x):
         # print("x shape : ", x.shape)
+
+        def my_paddding(x_split, index, pieces=(2, 2)):
+            dim = x.shape
+
+
+        '''
         def split(x, pieces=(2, 2), index_i=0, index_j=0):
             dim = x.shape
             l_i = dim[2] // pieces[0]
@@ -141,7 +147,6 @@ class lossy_Conv2d_new(nn.Module):
 
             return res.cuda()
 
-        '''
         time1 = time.time()
         x_split = []
         for i in range(self.pieces[0]):
@@ -172,15 +177,15 @@ class lossy_Conv2d_new(nn.Module):
         '''
 
         time1 = time.time()
+        dim = x.shape
+        # (x1, x2) = torch.chunk(x, 2, 2)
+        # (x11, x12) = torch.chunk(x1, 2, 3)
+        # (x21, x22) = torch.chunk(x2, 2, 3)
+        x11 = x[:, :, 0: dim[2] // 2, 0: dim[3] // 2]
+        x12 = x[:, :, 0: dim[2] // 2, dim[3] // 2: dim[3]]
+        x21 = x[:, :, dim[2] // 2: dim[2], 0: dim[3] // 2]
+        x22 = x[:, :, dim[2] // 2: dim[2], dim[3] // 2: dim[3]]
 
-        (x1, x2) = torch.chunk(x, 2, 2)
-        (x11, x12) = torch.chunk(x1, 2, 3)
-        (x21, x22) = torch.chunk(x2, 2, 3)
-        '''
-        x1, x2 = rearrange(x, 'b c (split h) w -> split b c h w', split=2)
-        x11, x12 = rearrange(x1, 'b c h (split w) -> split b c h w', split=2)
-        x21, x22 = rearrange(x2, 'b c h (split w) -> split b c h w', split=2)
-        '''
         time2 = time.time()
         print("split time = ", time2 - time1)
 
