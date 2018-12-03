@@ -160,12 +160,12 @@ class lossy_Conv2d_new(nn.Module):
                 dummy.append(rr)
             r.append(dummy)
         time2 = time.time()
-        print("conv time : ", time2 - time1)
+        # print("conv time : ", time2 - time1)
 
         time1 = time.time()
         r_combine = combine(r, self.pieces, x.shape)
         time2 = time.time()
-        print("combine time : ", time2 - time1)
+        # print("combine time : ", time2 - time1)
         return r_combine
 
 
@@ -250,7 +250,7 @@ class Quant_ReLU(nn.Module):
 
     def forward(self, x):
         # print(x.shape)
-
+        time1 = time.time()
         def gen_mask(dim=(16, 16, 4, 4), pieces=(2, 2)):
             mask = torch.zeros(dim[2], dim[3])
             for i in range(1, pieces[0]):
@@ -271,7 +271,8 @@ class Quant_ReLU(nn.Module):
         # print(r1[0,0,:,:])
         # applies different mask to the pixel in the middle and on the margin
         r = F.relu(x * (1 - mask)) + r1
-
+        time2 = time.time()
+        print("Quant RELU time = ", time2 - time1)
         return r
 
 
