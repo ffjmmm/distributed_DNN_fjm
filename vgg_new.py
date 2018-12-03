@@ -169,11 +169,8 @@ class lossy_Conv2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, padding=1, num_pieces=(2, 2)):
         super(lossy_Conv2d, self).__init__()
 
-        # for each pieces, define a new conv operation
         self.b1 = nn.Sequential(
-            # use the parameters instead of numbers
-            nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding)
-            # nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=0)
         )
 
     def forward(self, x):
@@ -194,13 +191,11 @@ class lossy_Conv2d(nn.Module):
                     b[:, :, i * dim[2] // pieces[1]:(i + 1) * dim[2] // pieces[1] + 2,
                     j * dim[3] // pieces[0]:(j + 1) * dim[3] // pieces[0] + 2] = b_sub
 
-                    # My Macbook doesn't have GPU, so I remove .cuda() for test
-                    #dummy.append(b[:, :, 1:-1, 1:-1])
                     dummy.append(b[:, :, 1:-1, 1:-1].cuda())
                 mask_list.append(dummy)
             return mask_list
 
-        # move this to __init__
+        '''
         def one_mask_matrix(dim=(16, 16, 4, 4), pieces=(2, 2), loss_prob=0.5):
             # fold into the larger matrix
             mask_list = [];
@@ -213,7 +208,7 @@ class lossy_Conv2d(nn.Module):
                     dummy.append(b.cuda())
                 mask_list.append(dummy)
             return mask_list
-
+        '''
         mask = mask_matrix(x.shape, (2, 2), 0.5)
         # print(mask[0][0].shape)
 
@@ -221,16 +216,20 @@ class lossy_Conv2d(nn.Module):
         x12 = x * mask[0][1]
         x21 = x * mask[1][0]
         x22 = x * mask[1][1]
+
         r11 = self.b1(x11)
         r12 = self.b1(x12)
         r21 = self.b1(x21)
         r22 = self.b1(x22)
-        # print r11.shape
+        r1 = torch.cat((r11, r12), 3)
+        r2 = torch.cat((r21, r22), 3)
+        r = torch.cat((r1, r2), 2)
+
+        '''
         one_mask = one_mask_matrix(r11.shape, (2, 2), 0.5)
         # concatenate the results
         r = r11 * one_mask[0][0] + r12 * one_mask[0][1] + r21 * one_mask[1][0] + r22 * one_mask[1][1]
-
-        # r = r11 * one_mask[0][0] + r12 * one_mask[0][1] + r21 * one_mask[1][0] + r22 * one_mask[1][1]
+        '''
         return r
 
 
