@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
+from einops import rearrange, reduce
 
 import time
 
@@ -169,9 +170,33 @@ class lossy_Conv2d_new(nn.Module):
         # print("combine time : ", time2 - time1)
         return r_combine
         '''
-        x = split(x, (1, 1), 0, 0)
-        x = self.b1(x)
-        return x
+
+        time1 = time.time()
+
+        x1, x2 = rearrange(x, 'b c (split h) w -> split b c h w', split=2)
+        x11, x12 = rearrange(x1, 'b c h (split w) -> split b c h w', split=2)
+        x21, x22 = rearrange(x2, 'b c h (split w) -> split b c h w', split=2)
+
+        time2 = time.time()
+        print("split time = ", time2 - time1)
+
+        r = []
+        dummy = []
+        r11 = self.b1(x11)
+        r12 = self.b1(x12)
+        dummy.append(r11)
+        dummy.append(r12)
+        r.append(dummy)
+        dummy = []
+        r21 = self.b1(x21)
+        r22 = self.b1(x22)
+        dummy.append(r21)
+        dummy.append(r22)
+        r.append(dummy)
+
+        r_combine = conbine(r, self.pieces, x.shape)
+
+        return r_combine
 
 
 class lossy_Conv2d(nn.Module):
