@@ -186,6 +186,7 @@ class lossy_Conv2d_new(nn.Module):
             # x11[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1] = 2
             # x11[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1]] = 3
             '''
+            '''
             x11[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1] = \
                 F.dropout(x11[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1], p=alpha, training=True) * alpha
             x11[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1]] = \
@@ -205,7 +206,7 @@ class lossy_Conv2d_new(nn.Module):
                 F.dropout(x11[:, :, 0, 0: dim[3] // pieces[1] + 1], p=alpha, training=True) * alpha
             x22[:, :, 0: dim[2] // pieces[0] + 1, 0] = \
                 F.dropout(x11[:, :, 0: dim[2] // pieces[0] + 1, 0], p=alpha, training=True) * alpha
-
+            '''
             x11 = F.pad(x11, (1, 0, 1, 0, 0, 0, 0, 0))
             x12 = F.pad(x12, (0, 1, 1, 0, 0, 0, 0, 0))
             x21 = F.pad(x21, (1, 0, 0, 1, 0, 0, 0, 0))
