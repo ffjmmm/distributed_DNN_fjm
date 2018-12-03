@@ -172,30 +172,27 @@ class lossy_Conv2d_new(nn.Module):
         '''
 
         time1 = time.time()
-
+        (x1, x2) = torch.chunk(x, 2, 2)
+        (x11, x12) = torch.chunk(x1, 2, 3)
+        (x21, x22) = torch.chunk(x2, 2, 3)
+        '''
         x1, x2 = rearrange(x, 'b c (split h) w -> split b c h w', split=2)
         x11, x12 = rearrange(x1, 'b c h (split w) -> split b c h w', split=2)
         x21, x22 = rearrange(x2, 'b c h (split w) -> split b c h w', split=2)
-
+        '''
         time2 = time.time()
         print("split time = ", time2 - time1)
 
-        r = []
-        dummy = []
+        time1 = time.time()
         r11 = self.b1(x11)
         r12 = self.b1(x12)
-        dummy.append(r11)
-        dummy.append(r12)
-        r.append(dummy)
-        dummy = []
         r21 = self.b1(x21)
         r22 = self.b1(x22)
-        dummy.append(r21)
-        dummy.append(r22)
-        r.append(dummy)
-
-        r_combine = combine(r, self.pieces, x.shape)
-
+        r1 = torch.cat((r11, r12), 3)
+        r2 = torch.cat((r21, r22), 3)
+        r_combine = torch.cat((r1, r2), 2)
+        time2 = time.time()
+        print("conv and combine time = ", time2 - time1)
         return r_combine
 
 
