@@ -194,7 +194,7 @@ class lossy_Conv2d_new(nn.Module):
         dummy.append(r22)
         r.append(dummy)
 
-        r_combine = conbine(r, self.pieces, x.shape)
+        r_combine = combine(r, self.pieces, x.shape)
 
         return r_combine
 
