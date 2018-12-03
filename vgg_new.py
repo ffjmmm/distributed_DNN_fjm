@@ -24,14 +24,14 @@ cfg = {
 
 # new lossy_Conv2d without mask matrix
 class lossy_Conv2d_new(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, padding=0, num_pieces=(2, 2)):
+    def __init__(self, in_channels, out_channels, kernel_size=3, padding=1, num_pieces=(2, 2)):
         super(lossy_Conv2d_new, self).__init__()
 
         # for each pieces, define a new conv operation
         self.pieces = num_pieces
         self.b1 = nn.Sequential(
             # use the parameters instead of numbers
-            nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding)
+            nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=0)
         )
         self.rand1 = torch.FloatTensor(64, 512, 30, 2).uniform_() > 0.5
         self.rand1 = self.rand1.float()
@@ -185,6 +185,10 @@ class lossy_Conv2d_new(nn.Module):
         x12 = x[:, :, 0: dim[2] // 2, dim[3] // 2: dim[3]]
         x21 = x[:, :, dim[2] // 2: dim[2], 0: dim[3] // 2]
         x22 = x[:, :, dim[2] // 2: dim[2], dim[3] // 2: dim[3]]
+        x11 = F.pad(x11, (1, 1, 1, 1))
+        x12 = F.pad(x12, (1, 1, 1, 1))
+        x21 = F.pad(x21, (1, 1, 1, 1))
+        x22 = F.pad(x22, (1, 1, 1, 1))
 
         time2 = time.time()
         print("split time = ", time2 - time1)
