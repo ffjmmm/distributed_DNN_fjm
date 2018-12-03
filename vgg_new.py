@@ -133,7 +133,7 @@ class lossy_Conv2d_new(nn.Module):
             return x11.cuda(), x12.cuda(), x21.cuda(), x22.cuda()
         '''
 
-        def split(x):
+        def split(x, pieces):
             dim = x.shape
             x11 = x[:, :, 0: dim[2] // 2, 0: dim[3] // 2]
             x12 = x[:, :, 0: dim[2] // 2, dim[3] // 2: dim[3]]
