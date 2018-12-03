@@ -98,24 +98,28 @@ class lossy_Conv2d_new(nn.Module):
             dim = x.shape
 
             x11 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
+            x11 = x11.cuda()
             x11.copy_(x[:, :, 0: dim[2] // pieces[0] + 1, 0: dim[3] // pieces[1] + 1])
 
             x12 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
+            x12 = x12.cuda()
             x12.copy_(x[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1] - 1: dim[3]])
 
             x21 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
+            x21 = x21.cuda()
             x21.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], 0: dim[3] // pieces[1] + 1])
 
             x22 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
+            x22 = x22.cuda()
             x22.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], dim[3] // pieces[1] - 1:dim[3]])
 
             alpha = 0.5
             rand = torch.FloatTensor(4, dim[0], dim[1], dim[2] // 2 + 1, dim[3] // 2 + 1).uniform_() > alpha
             rand = rand.float()
-            x11 = x11 * rand[0]
-            x12 = x12 * rand[1]
-            x21 = x21 * rand[2]
-            x22 = x22 * rand[3]
+            x11 = x11 * rand[0].cuda()
+            x12 = x12 * rand[1].cuda()
+            x21 = x21 * rand[2].cuda()
+            x22 = x22 * rand[3].cuda()
             '''
             x11 = F.dropout(x11, p=0.5, training=True)
             x12 = F.dropout(x12, p=0.5, training=True)
