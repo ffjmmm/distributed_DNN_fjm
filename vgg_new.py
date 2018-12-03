@@ -121,6 +121,7 @@ class lossy_Conv2d_new(nn.Module):
             x21 = F.pad(x21, (1, 0, 0, 1, 0, 0, 0, 0))
             x22 = F.pad(x22, (0, 1, 0, 1, 0, 0, 0, 0))
 
+            '''
             x11[:, :, 1: dim[2] // pieces[0] + 1, 1: dim[3] // pieces[1] + 1] = \
                 x[:, :, 0: dim[2] // pieces[0], 0: dim[3] // pieces[1]]
             x12[:, :, 1: dim[2] // pieces[0] + 1, 1: dim[3] // pieces[1] + 1] = \
@@ -129,7 +130,7 @@ class lossy_Conv2d_new(nn.Module):
                 x[:, :, dim[2] // pieces[0]: dim[2], 0: dim[3] // pieces[1]]
             x22[:, :, 1: dim[2] // pieces[0] + 1, 1: dim[3] // pieces[1] + 1] = \
                 x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]]
-
+            '''
             
 
             return x11.cuda(), x12.cuda(), x21.cuda(), x22.cuda()
