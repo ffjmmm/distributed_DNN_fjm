@@ -33,23 +33,9 @@ class lossy_Conv2d_new(nn.Module):
             # use the parameters instead of numbers
             nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=0)
         )
-        self.rand1 = torch.FloatTensor(64, 512, 30, 2).uniform_() > 0.5
-        self.rand1 = self.rand1.float()
-        self.rand2 = torch.FloatTensor(64, 512, 2, 30).uniform_() > 0.5
-        self.rand2 = self.rand2.float()
-        self.rand3 = torch.FloatTensor(64, 512, 2, 2).uniform_() > 0.5
-        self.rand3 = self.rand3.float()
 
     def forward(self, x):
         # print("x shape : ", x.shape)
-
-        def my_paddding(xx, index, pieces=(2, 2)):
-            dim = x.shape
-            xx = F.pad(xx, (1, 1, 1, 1))
-            dim_xx = xx.shape
-            if (index == 1):
-                xx[:, :, 1: dim_xx[2], dim_xx[3] - 1] = x[:, :, 0: dim_xx[2] - 1, dim[3] // pieces[1]] * self.rand1[:, ]
-
 
         '''
         def split(x, pieces=(2, 2), index_i=0, index_j=0):
@@ -180,20 +166,68 @@ class lossy_Conv2d_new(nn.Module):
         return r_combine
         '''
 
-        time1 = time.time()
-        dim = x.shape
-        # (x1, x2) = torch.chunk(x, 2, 2)
-        # (x11, x12) = torch.chunk(x1, 2, 3)
-        # (x21, x22) = torch.chunk(x2, 2, 3)
-        x11 = x[:, :, 0: dim[2] // 2 + 1, 0: dim[3] // 2 + 1]
-        x12 = x[:, :, 0: dim[2] // 2 + 1, dim[3] // 2 - 1: dim[3]]
-        x21 = x[:, :, dim[2] // 2 - 1: dim[2], 0: dim[3] // 2 + 1]
-        x22 = x[:, :, dim[2] // 2 - 1: dim[2], dim[3] // 2 - 1: dim[3]]
-        x11 = F.pad(x11, (1, 0, 1, 0, 0, 0, 0, 0))
-        x12 = F.pad(x12, (0, 1, 1, 0, 0, 0, 0, 0))
-        x21 = F.pad(x21, (1, 0, 0, 1, 0, 0, 0, 0))
-        x22 = F.pad(x22, (0, 1, 0, 1, 0, 0, 0, 0))
+        def split(x, pieces):
+            dim = x.shape
+            x11 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
+            x11.copy_(x[:, :, 0: dim[2] // pieces[0] + 1, 0: dim[3] // pieces[1] + 1])
 
+            x12 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
+            x12.copy_(x[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1] - 1: dim[3]])
+
+            x21 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
+            x21.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], 0: dim[3] // pieces[1] + 1])
+
+            x22 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
+            x22.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], dim[3] // pieces[1] - 1:dim[3]])
+
+            '''
+            x11 = x[:, :, 0: dim[2] // pieces[0], 0: dim[3] // pieces[1]]
+            x12 = x[:, :, 0: dim[2] // pieces[0], dim[3] // pieces[1]: dim[3]]
+            x21 = x[:, :, dim[2] // pieces[0]: dim[2], 0: dim[3] // pieces[1]]
+            x22 = x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]]
+
+            x11 = F.pad(x11, (0, 1, 0, 1, 0, 0, 0, 0))
+            x11[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1] = x[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1]
+            x11[:, :, 0: dim[2] // pieces[0], dim[3] // pieces[1]] = x[:, :, 0: dim[2] // pieces[0], dim[3] // pieces[1]]
+
+            x12 = F.pad(x12, (0, 1, 1, 0, 0, 0, 0, 0))
+            x21 = F.pad(x21, (1, 0, 0, 1, 0, 0, 0, 0))
+            x22 = F.pad(x22, (0, 1, 0, 1, 0, 0, 0, 0))
+
+            alpha = 0.5
+            '''
+            # x11[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1] = 2
+            # x11[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1]] = 3
+            '''
+            x11[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1] = \
+                F.dropout(x11[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1], p=alpha, training=True) * alpha
+            x11[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1]] = \
+                F.dropout(x11[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1]], p=alpha, training=True) * alpha
+
+            x12[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1] = \
+                F.dropout(x11[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1], p=alpha, training=True) * alpha
+            x12[:, :, 0: dim[2] // pieces[0] + 1, 0] = \
+                F.dropout(x11[:, :, 0: dim[2] // pieces[0] + 1, 0], p=alpha, training=True) * alpha
+
+            x21[:, :, 0, 0: dim[3] // pieces[1] + 1] = \
+                F.dropout(x11[:, :, 0, 0: dim[3] // pieces[1] + 1], p=alpha, training=True) * alpha
+            x21[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1]] = \
+                F.dropout(x11[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1]], p=alpha, training=True) * alpha
+
+            x22[:, :, 0, 0: dim[3] // pieces[1] + 1] = \
+                F.dropout(x11[:, :, 0, 0: dim[3] // pieces[1] + 1], p=alpha, training=True) * alpha
+            x22[:, :, 0: dim[2] // pieces[0] + 1, 0] = \
+                F.dropout(x11[:, :, 0: dim[2] // pieces[0] + 1, 0], p=alpha, training=True) * alpha
+            '''
+            x11 = F.pad(x11, (1, 0, 1, 0, 0, 0, 0, 0))
+            x12 = F.pad(x12, (0, 1, 1, 0, 0, 0, 0, 0))
+            x21 = F.pad(x21, (1, 0, 0, 1, 0, 0, 0, 0))
+            x22 = F.pad(x22, (0, 1, 0, 1, 0, 0, 0, 0))
+
+            return x11, x12, x21, x22
+
+        time1 = time.time()
+        x11, x12, x21, x22 = split(x, self.pieces)
 
         time2 = time.time()
         print("split time = ", time2 - time1)
