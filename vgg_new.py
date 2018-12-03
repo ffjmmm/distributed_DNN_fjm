@@ -147,7 +147,7 @@ class lossy_Conv2d_new(nn.Module):
 
 
             alpha = 0.5
-            rand = torch.FloatTensor(4, dim[0], dim[1], dim[2] // 2, dim[3] // 2).uniform_() > alpha
+            rand = torch.FloatTensor(4, dim[0], dim[1], dim[2] // 2 + 2, dim[3] // 2 + 2).uniform_() > alpha
             rand = rand.float()
             x11 = x11 * rand[0].cuda()
             x12 = x12 * rand[1].cuda()
