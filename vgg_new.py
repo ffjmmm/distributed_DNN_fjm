@@ -64,7 +64,7 @@ class lossy_Conv2d_new(nn.Module):
                 # rand = rand.float()
                 # x_split[:, :, 0, 1: l_j + 1] = x[:, :, i_s - 1, j_s: j_e] * rand[0, :].cuda()
                 # x_split[:, :, 0, 1: l_j + 1] = x[:, :, i_s - 1, j_s: j_e] * rand[:, :, 0, :].cuda()
-                x_split[:, :, 0, 1: l_j + 1] = x[:, :, i_s - 1, j_s: j_e] * self.rand2[0: dim[0], 0: dim[1], 0, 0:dim[3]].cuda()
+                x_split[:, :, 0, 1: l_j + 1] = x[:, :, i_s - 1, j_s: j_e] * self.rand2[0: dim[0], 0: dim[1], 0, 0:l_j].cuda()
             if i_e < dim[2]:
                 # rand = torch.FloatTensor(1, l_j).uniform_() > alpha
                 # rand = torch.ones(dim[0], dim[1], 1, l_j)
@@ -72,7 +72,7 @@ class lossy_Conv2d_new(nn.Module):
                 # rand = rand.float()
                 # x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * rand[0, :].cuda()
                 # x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * rand[:, :, 0, :].cuda()
-                x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * self.rand2[0: dim[0], 0: dim[1], 1, 0:dim[3]].cuda()
+                x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * self.rand2[0: dim[0], 0: dim[1], 1, 0:l_j].cuda()
             if j_s > 0:
                 # rand = torch.FloatTensor(l_i, 1).uniform_() > alpha
                 # rand = torch.ones(dim[0], dim[1], l_i, 1)
@@ -80,7 +80,7 @@ class lossy_Conv2d_new(nn.Module):
                 # rand = rand.float()
                 # x_split[:, :, 1: l_i + 1, 0] = x[:, :, i_s: i_e, j_s - 1] * rand[:, 0].cuda()
                 # x_split[:, :, 1: l_i + 1, 0] = x[:, :, i_s: i_e, j_s - 1] * rand[:, :, :, 0].cuda()
-                x_split[:, :, 1: l_i + 1, 0] = x[:, :, i_s: i_e, j_s - 1] * self.rand1[0: dim[0], 0: dim[1], 0: dim[2], 0].cuda()
+                x_split[:, :, 1: l_i + 1, 0] = x[:, :, i_s: i_e, j_s - 1] * self.rand1[0: dim[0], 0: dim[1], 0: l_i, 0].cuda()
             if j_e < dim[3]:
                 # rand = torch.FloatTensor(l_i, 1).uniform_() > alpha
                 # rand = torch.ones(dim[0], dim[1], l_i, 1)
@@ -88,7 +88,7 @@ class lossy_Conv2d_new(nn.Module):
                 # rand = rand.float()
                 # x_split[:, :, 1: l_i + 1, l_j + 1] = x[:, :, i_s: i_e, j_e] * rand[:, 0].cuda()
                 # x_split[:, :, 1: l_i + 1, l_j + 1] = x[:, :, i_s: i_e, j_e] * rand[:, :, :, 0].cuda()
-                x_split[:, :, 1: l_i + 1, l_j + 1] = x[:, :, i_s: i_e, j_e] * self.rand1[0: dim[0], 0: dim[1], 0: dim[2], 1].cuda()
+                x_split[:, :, 1: l_i + 1, l_j + 1] = x[:, :, i_s: i_e, j_e] * self.rand1[0: dim[0], 0: dim[1], 0: l_i, 1].cuda()
 
             # Four corner
             if i_s > 0 and j_s > 0:
