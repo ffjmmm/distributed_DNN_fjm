@@ -100,8 +100,8 @@ def load_data():
 
         train_data = MyDataset(txt='./dataset-train.txt', transform=transform)
         test_data = MyDataset(txt='./dataset-test.txt', transform=transform)
-        train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True, num_workers=1)
-        test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, num_workers=1)
+        train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True, num_workers=2)
+        test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, num_workers=2)
 
 
 
@@ -176,7 +176,7 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
         optimizer.zero_grad()
         outputs = net(inputs)
         time2 = time.time()
-        print("forward time = ", time2 - time1)
+        print(">>>>>>>>>>forward time = ", time2 - time1, ">>>>>>>>>>>>>")
         loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
@@ -193,7 +193,7 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
         '''
 
         time1 = time.time()
-        print("backward time = ", time1 - time2)
+        print(">>>>>>>>>>>backward time = ", time1 - time2)
 
         if (batch_idx + 1) % 2 == 0:
             break
