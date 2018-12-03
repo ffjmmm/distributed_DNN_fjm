@@ -100,8 +100,8 @@ def load_data():
 
         train_data = MyDataset(txt='./dataset-train.txt', transform=transform)
         test_data = MyDataset(txt='./dataset-test.txt', transform=transform)
-        train_loader = DataLoader(dataset=train_data, batch_size=64, shuffle=True, num_workers=2)
-        test_loader = DataLoader(dataset=test_data, batch_size=64, num_workers=2)
+        train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True, num_workers=2)
+        test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, num_workers=2)
 
 
 
