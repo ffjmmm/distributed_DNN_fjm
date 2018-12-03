@@ -34,7 +34,7 @@ class lossy_Conv2d_new(nn.Module):
         )
 
     def forward(self, x):
-        print("x shape : "x.shape)
+        print("x shape : ", x.shape)
         def split(x, pieces=(2, 2), index_i=0, index_j=0):
             dim = x.shape
             l_i = dim[2] // pieces[0]
