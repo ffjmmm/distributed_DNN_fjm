@@ -37,6 +37,7 @@ class lossy_Conv2d_new(nn.Module):
     def forward(self, x):
         # print("x shape : ", x.shape)
 
+        '''
         def split(x, pieces=(2, 2), index_i=0, index_j=0):
             dim = x.shape
             l_i = dim[2] // pieces[0]
@@ -90,8 +91,8 @@ class lossy_Conv2d_new(nn.Module):
                 x_split[:, :, l_i + 1, l_j + 1] = x[:, :, i_e, j_e] * rand[:, :, 0, 0].cuda()
 
             return x_split.cuda()
-
         '''
+
         
         def split(x, pieces):
             dim = x.shape
@@ -132,14 +133,14 @@ class lossy_Conv2d_new(nn.Module):
             
 
             return x11.cuda(), x12.cuda(), x21.cuda(), x22.cuda()
-        
-        '''
 
-        # x11, x12, x21, x22 = split(x, self.pieces)
+        x11, x12, x21, x22 = split(x, self.pieces)
+        '''
         x11 = split(x, self.pieces, 0, 0)
         x12 = split(x, self.pieces, 0, 1)
         x21 = split(x, self.pieces, 1, 0)
         x22 = split(x, self.pieces, 1, 1)
+        '''
 
         # time1 = time.time()
         r11 = self.b1(x11)
