@@ -37,7 +37,6 @@ class lossy_Conv2d_new(nn.Module):
     def forward(self, x):
         # print("x shape : ", x.shape)
 
-        '''
         def split(x, pieces=(2, 2), index_i=0, index_j=0):
             dim = x.shape
             l_i = dim[2] // pieces[0]
@@ -50,6 +49,7 @@ class lossy_Conv2d_new(nn.Module):
             j_e = j_s + l_j
 
             x_split = torch.zeros((dim[0], dim[1], l_i + 2, l_j + 2))
+            x_split = x_split.cuda()
             x_split[:, :, 1: l_i + 1, 1: l_j + 1] = x[:, :, i_s: i_e, j_s: j_e]
 
             # generate random number to simulate the edge pixel loss
@@ -91,8 +91,8 @@ class lossy_Conv2d_new(nn.Module):
                 x_split[:, :, l_i + 1, l_j + 1] = x[:, :, i_e, j_e] * rand[:, :, 0, 0].cuda()
 
             return x_split.cuda()
-        '''
 
+        '''
         def split(x, pieces):
             
             dim = x.shape
@@ -113,7 +113,6 @@ class lossy_Conv2d_new(nn.Module):
             # x22 = x22.cuda()
             x22.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], dim[3] // pieces[1] - 1:dim[3]])
 
-            '''
             alpha = 0.5
             rand = torch.FloatTensor(4, dim[0], dim[1], dim[2] // 2 + 1, dim[3] // 2 + 1).uniform_() > alpha
             rand = rand.float()
@@ -121,7 +120,6 @@ class lossy_Conv2d_new(nn.Module):
             x12 = x12 * rand[1].cuda()
             x21 = x21 * rand[2].cuda()
             x22 = x22 * rand[3].cuda()
-            '''
 
             x11 = F.dropout(x11, p=0.5, training=True)
             x12 = F.dropout(x12, p=0.5, training=True)
@@ -143,14 +141,16 @@ class lossy_Conv2d_new(nn.Module):
                 x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]]
 
             return x11.cuda(), x12.cuda(), x21.cuda(), x22.cuda()
-
-        x11, x12, x21, x22 = split(x, self.pieces)
         '''
+
+
+        # x11, x12, x21, x22 = split(x, self.pieces)
+
         x11 = split(x, self.pieces, 0, 0)
         x12 = split(x, self.pieces, 0, 1)
         x21 = split(x, self.pieces, 1, 0)
         x22 = split(x, self.pieces, 1, 1)
-        '''
+
 
         # time1 = time.time()
         r11 = self.b1(x11)
