@@ -42,6 +42,7 @@ class lossy_Conv2d_new(nn.Module):
     def forward(self, x):
         # print("x shape : ", x.shape)
         def split(x, pieces=(2, 2), index_i=0, index_j=0):
+            x = x.float()
             dim = x.shape
             l_i = dim[2] // pieces[0]
             l_j = dim[3] // pieces[1]
@@ -72,7 +73,7 @@ class lossy_Conv2d_new(nn.Module):
                 # rand = rand.float()
                 # x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * rand[0, :].cuda()
                 # x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * rand[:, :, 0, :].cuda()
-                x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * self.rand2[0: dim[0], 0: dim[1], 1, 0:l_j].cuda()
+                x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * self.rand2[0: dim[0], 0: dim[1], 1, 0:l_j]
             if j_s > 0:
                 # rand = torch.FloatTensor(l_i, 1).uniform_() > alpha
                 # rand = torch.ones(dim[0], dim[1], l_i, 1)
