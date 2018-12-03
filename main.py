@@ -195,7 +195,7 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
         time1 = time.time()
         print("backward time = ", time1 - time2)
 
-        if (batch_idx + 1) % 1 == 0:
+        if (batch_idx + 1) % 5 == 0:
             break
 
 
