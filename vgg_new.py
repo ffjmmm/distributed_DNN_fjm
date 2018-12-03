@@ -182,6 +182,11 @@ class lossy_Conv2d_new(nn.Module):
             x22.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], dim[3] // pieces[1] - 1:dim[3]])
 
             alpha = 0.5
+
+            x11 = F.dropout(x11, p=0.5, training=True)
+            x12 = F.dropout(x12, p=0.5, training=True)
+            x21 = F.dropout(x21, p=0.5, training=True)
+            x22 = F.dropout(x22, p=0.5, training=True)
             '''
             # x11[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1] = 2
             # x11[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1]] = 3
@@ -220,7 +225,7 @@ class lossy_Conv2d_new(nn.Module):
         time2 = time.time()
         print("split time = ", time2 - time1)
 
-        time1 = time.time()
+        # time1 = time.time()
         r11 = self.b1(x11)
         r12 = self.b1(x12)
         r21 = self.b1(x21)
@@ -228,8 +233,8 @@ class lossy_Conv2d_new(nn.Module):
         r1 = torch.cat((r11, r12), 3)
         r2 = torch.cat((r21, r22), 3)
         r_combine = torch.cat((r1, r2), 2)
-        time2 = time.time()
-        print("conv and combine time = ", time2 - time1)
+        #time2 = time.time()
+        #print("conv and combine time = ", time2 - time1)
         return r_combine
 
 
