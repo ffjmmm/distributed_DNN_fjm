@@ -147,11 +147,12 @@ class lossy_Conv2d_new(nn.Module):
 
 
             alpha = 0.5
-
-            x11 = F.dropout(x11, p=0.5, training=True)
-            x12 = F.dropout(x12, p=0.5, training=True)
-            x21 = F.dropout(x21, p=0.5, training=True)
-            x22 = F.dropout(x22, p=0.5, training=True)
+            rand = torch.FloatTensor(4, dim[0], dim[1], dim[2] // 2, dim[3] // 2).uniform_() > alpha
+            rand = rand.float()
+            x11 = x11 * rand[0].cuda()
+            x12 = x12 * rand[1].cuda()
+            x21 = x21 * rand[2].cuda()
+            x22 = x22 * rand[3].cuda()
             '''
             x11 = F.pad(x11, (1, 0, 1, 0, 0, 0, 0, 0))
             x12 = F.pad(x12, (0, 1, 1, 0, 0, 0, 0, 0))
