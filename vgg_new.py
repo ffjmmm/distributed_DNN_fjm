@@ -43,8 +43,12 @@ class lossy_Conv2d_new(nn.Module):
     def forward(self, x):
         # print("x shape : ", x.shape)
 
-        def my_paddding(x_split, index, pieces=(2, 2)):
+        def my_paddding(xx, index, pieces=(2, 2)):
             dim = x.shape
+            xx = F.pad(xx, (1, 1, 1, 1))
+            dim_xx = xx.shape
+            if (index == 1):
+                xx[:, :, 1: dim_xx[2], dim_xx[3] - 1] = x[:, :, 0: dim_xx[2] - 1, dim[3] // pieces[1]] * self.rand1[:, ]
 
 
         '''
@@ -181,14 +185,15 @@ class lossy_Conv2d_new(nn.Module):
         # (x1, x2) = torch.chunk(x, 2, 2)
         # (x11, x12) = torch.chunk(x1, 2, 3)
         # (x21, x22) = torch.chunk(x2, 2, 3)
-        x11 = x[:, :, 0: dim[2] // 2, 0: dim[3] // 2]
-        x12 = x[:, :, 0: dim[2] // 2, dim[3] // 2: dim[3]]
-        x21 = x[:, :, dim[2] // 2: dim[2], 0: dim[3] // 2]
-        x22 = x[:, :, dim[2] // 2: dim[2], dim[3] // 2: dim[3]]
-        x11 = F.pad(x11, (1, 1, 1, 1))
-        x12 = F.pad(x12, (1, 1, 1, 1))
-        x21 = F.pad(x21, (1, 1, 1, 1))
-        x22 = F.pad(x22, (1, 1, 1, 1))
+        x11 = x[:, :, 0: dim[2] // 2 + 1, 0: dim[3] // 2 + 1]
+        x12 = x[:, :, 0: dim[2] // 2 + 1, dim[3] // 2 - 1: dim[3]]
+        x21 = x[:, :, dim[2] // 2 - 1: dim[2], 0: dim[3] // 2 + 1]
+        x22 = x[:, :, dim[2] // 2 - 1: dim[2], dim[3] // 2 - 1: dim[3]]
+        x11 = F.pad(x11, (0, 0, 0, 0, 1, 0, 1, 0))
+        x12 = F.pad(x12, (0, 0, 0, 0, 0, 1, 1, 0))
+        x21 = F.pad(x21, (0, 0, 0, 0, 1, 0, 0, 1))
+        x22 = F.pad(x22, (0, 0, 0, 0, 0, 1, 0, 1))
+
 
         time2 = time.time()
         print("split time = ", time2 - time1)
