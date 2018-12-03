@@ -168,7 +168,7 @@ class lossy_Conv2d_new(nn.Module):
 
         def split(x, pieces):
             dim = x.shape
-            '''
+
             x11 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
             x11.copy_(x[:, :, 0: dim[2] // pieces[0] + 1, 0: dim[3] // pieces[1] + 1])
 
@@ -180,26 +180,6 @@ class lossy_Conv2d_new(nn.Module):
 
             x22 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
             x22.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], dim[3] // pieces[1] - 1:dim[3]])
-            '''
-            x11 = x[:, :, 0: dim[2] // pieces[0] + 1, 0: dim[3] // pieces[1] + 1]
-            x12 = x[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1] - 1: dim[3]]
-            x21 = x[:, :, dim[2] // pieces[0] - 1: dim[2], 0: dim[3] // pieces[1] + 1]
-            x22 = x[:, :, dim[2] // pieces[0] - 1: dim[2], dim[3] // pieces[1] - 1: dim[3]]
-
-
-            '''
-            x11 = x[:, :, 0: dim[2] // pieces[0], 0: dim[3] // pieces[1]]
-            x12 = x[:, :, 0: dim[2] // pieces[0], dim[3] // pieces[1]: dim[3]]
-            x21 = x[:, :, dim[2] // pieces[0]: dim[2], 0: dim[3] // pieces[1]]
-            x22 = x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]]
-
-            x11 = F.pad(x11, (0, 1, 0, 1, 0, 0, 0, 0))
-            x11[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1] = x[:, :, dim[2] // pieces[0], 0: dim[3] // pieces[1] + 1]
-            x11[:, :, 0: dim[2] // pieces[0], dim[3] // pieces[1]] = x[:, :, 0: dim[2] // pieces[0], dim[3] // pieces[1]]
-
-            x12 = F.pad(x12, (0, 1, 1, 0, 0, 0, 0, 0))
-            x21 = F.pad(x21, (1, 0, 0, 1, 0, 0, 0, 0))
-            x22 = F.pad(x22, (0, 1, 0, 1, 0, 0, 0, 0))
 
             alpha = 0.5
             '''
@@ -225,7 +205,7 @@ class lossy_Conv2d_new(nn.Module):
                 F.dropout(x11[:, :, 0, 0: dim[3] // pieces[1] + 1], p=alpha, training=True) * alpha
             x22[:, :, 0: dim[2] // pieces[0] + 1, 0] = \
                 F.dropout(x11[:, :, 0: dim[2] // pieces[0] + 1, 0], p=alpha, training=True) * alpha
-            '''
+
             x11 = F.pad(x11, (1, 0, 1, 0, 0, 0, 0, 0))
             x12 = F.pad(x12, (0, 1, 1, 0, 0, 0, 0, 0))
             x21 = F.pad(x21, (1, 0, 0, 1, 0, 0, 0, 0))
