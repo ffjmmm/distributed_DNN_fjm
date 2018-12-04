@@ -119,9 +119,9 @@ class lossy_Conv2d_new(nn.Module):
             x22.copy_(x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]])
             '''
             x11.copy_(x[:, :, 0: dim[2] // pieces[0] + 1, 0: dim[3] // pieces[1] + 1])
-            x12.copy_(x[:, :, 0: dim[2] // pieces[0] + 1, dim[3] - 1 // pieces[1]: dim[3]])
-            x21.copy_(x[:, :, dim[2] - 1 // pieces[0]: dim[2], 0: dim[3] // pieces[1] + 1])
-            x22.copy_(x[:, :, dim[2] - 1 // pieces[0]: dim[2], dim[3] - 1 // pieces[1]: dim[3]])
+            x12.copy_(x[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1] - 1: dim[3]])
+            x21.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], 0: dim[3] // pieces[1] + 1])
+            x22.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], dim[3] // pieces[1] - 1: dim[3]])
 
             '''
             x11 = x[:, :, 0: dim[2] // pieces[0] + 1, 0: dim[3] // pieces[1] + 1]
