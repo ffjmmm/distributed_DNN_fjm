@@ -152,13 +152,14 @@ class lossy_Conv2d_new(nn.Module):
             '''
             return x11.cuda(), x12.cuda(), x21.cuda(), x22.cuda()
 
-        # x11, x12, x21, x22 = split(x, self.pieces)
+        x11, x12, x21, x22 = split(x, self.pieces)
 
+        '''
         x11 = split(x, self.pieces, 0, 0)
         x12 = split(x, self.pieces, 0, 1)
         x21 = split(x, self.pieces, 1, 0)
         x22 = split(x, self.pieces, 1, 1)
-
+        '''
 
         # time1 = time.time()
         r11 = self.b1(x11)
