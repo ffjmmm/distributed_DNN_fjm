@@ -275,6 +275,7 @@ def main():
     else:
         name = name + 'Distributed_'
     name = name + args.dataset
+    print(name)
     writer = SummaryWriter('logs/' + name)
     train_loader, test_loader = load_data()
     print('==> Training..')
