@@ -12,7 +12,7 @@ from PIL import Image, ImageEnhance
 import torchvision
 import torchvision.transforms as transforms
 
-# from tensorboardX import SummaryWriter
+from tensorboardX import SummaryWriter
 
 import os
 import argparse
@@ -221,7 +221,8 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     # Save checkpoint.
     acc = 100. * correct / total
     print("Epoch %d finish, test acc : %f" % (epoch, acc))
-    # writer.add_scalar('Acc', acc, epoch)
+    writer.add_scalar('Acc', acc, epoch)
+    writer.add_scalar('Loss', test_loss, epoch)
 
     if acc > best_acc:
         print('Saving..')
@@ -268,15 +269,19 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    # writer = SummaryWriter('logs/distributed_DNN')
+    name = 'VGG_'
+    if args.original:
+        name = name + 'Original_'
+    else:
+        name = name + 'Distributed_'
+    name = name + args.dataset
+    writer = SummaryWriter('logs/' + name)
     train_loader, test_loader = load_data()
     print('==> Training..')
     for epoch in range(start_epoch, start_epoch + args.epoch):
-        # train(net, device, optimizer, criterion, epoch, train_loader, writer)
-        # best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
-        train(net, device, optimizer, criterion, epoch, train_loader)
-        best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
-    # writer.close()
+        train(net, device, optimizer, criterion, epoch, train_loader, writer)
+        best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
+    writer.close()
 
 
 if __name__ == '__main__':

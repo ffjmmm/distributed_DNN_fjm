@@ -281,7 +281,7 @@ class VGG(nn.Module):
             self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128)
             self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256)
         self.features5 = self._make_layers(cfg['VGG16_5'], 512)
-        if dataset == 'ciffar10':
+        if dataset == 'CIFFAR10':
             self.classifier = nn.Linear(512, 10)
         else:
             self.classifier = nn.Linear(25088, 257)
