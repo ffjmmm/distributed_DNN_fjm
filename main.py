@@ -220,7 +220,7 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
 
     # Save checkpoint.
     acc = 100. * correct / total
-    print("Epoch %d finish, test acc : %f" % (epoch, acc))
+    print("Epoch %d finish, test acc : %f, best add : " % (epoch, acc, best_acc))
     writer.add_scalar('Acc', acc, epoch)
     writer.add_scalar('Loss', test_loss, epoch)
 
@@ -233,7 +233,7 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/ckpt.t7')
+        torch.save(state, './checkpoint/ckpt_' + args.dataset + '.t7')
         best_acc = acc
 
     return best_acc
@@ -258,10 +258,10 @@ def main():
         # Load checkpoint.
         print('==> Resuming from checkpoint..')
         assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-        checkpoint = torch.load('./checkpoint/ckpt.t7')
+        checkpoint = torch.load('./checkpoint/ckpt_' + args.dataset + '.t7')
         net.load_state_dict(checkpoint['net'])
         best_acc = checkpoint['acc']
-        start_epoch = checkpoint['epoch'] + 1
+        start_epoch = checkpoint['epoch']
 
     print("Building model spends %fs\n" % (time_buildmodel_end - time_buildmodel_start))
 
