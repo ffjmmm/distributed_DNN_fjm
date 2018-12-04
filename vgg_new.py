@@ -37,7 +37,7 @@ class lossy_Conv2d_new(nn.Module):
     def forward(self, x):
         # print("x shape : ", x.shape)
 
-        def split(x, pieces=(2, 2), index_i=0, index_j=0):
+        def split_rand(x, pieces=(2, 2), index_i=0, index_j=0):
             dim = x.shape
             l_i = dim[2] // pieces[0]
             l_j = dim[3] // pieces[1]
@@ -55,34 +55,21 @@ class lossy_Conv2d_new(nn.Module):
             # generate random number to simulate the edge pixel loss
             alpha = 0.5
             if i_s > 0:
-                '''
                 rand = torch.FloatTensor(dim[0], dim[1], 1, l_j).uniform_() > alpha
                 rand = rand.float()
                 x_split[:, :, 0, 1: l_j + 1] = x[:, :, i_s - 1, j_s: j_e] * rand[:, :, 0, :].cuda()
-                '''
-                x_split[:, :, 0, 1: l_j + 1] = F.dropout(x[:, :, i_s - 1, j_s: j_e], alpha, True) * (1 - alpha)
             if i_e < dim[2]:
-                '''
                 rand = torch.FloatTensor(dim[0], dim[1], 1, l_j).uniform_() > alpha
                 rand = rand.float()
                 x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * rand[:, :, 0, :].cuda()
-                '''
-                x_split[:, :, l_i + 1, 1: l_j + 1] = F.dropout(x[:, :, i_e, j_s: j_e], alpha, True) * (1 - alpha)
             if j_s > 0:
-                '''
                 rand = torch.FloatTensor(dim[0], dim[1], l_i, 1).uniform_() > alpha
                 rand = rand.float()
                 x_split[:, :, 1: l_i + 1, 0] = x[:, :, i_s: i_e, j_s - 1] * rand[:, :, :, 0].cuda()
-                '''
-                x_split[:, :, 1: l_i + 1, 0] = F.dropout(x[:, :, i_s: i_e, j_s - 1], alpha, True) * (1 - alpha)
             if j_e < dim[3]:
-                '''
                 rand = torch.FloatTensor(dim[0], dim[1], l_i, 1).uniform_() > alpha
                 rand = rand.float()
                 x_split[:, :, 1: l_i + 1, l_j + 1] = x[:, :, i_s: i_e, j_e] * rand[:, :, :, 0].cuda()
-                '''
-                x_split[:, :, 1: l_i + 1, 0] = F.dropout(x[:, :, i_s: i_e, j_s - 1], alpha, True) * (1 - alpha)
-
 
             # Four corner
             if i_s > 0 and j_s > 0:
@@ -104,7 +91,38 @@ class lossy_Conv2d_new(nn.Module):
 
             return x_split.cuda()
 
+        
+        def split_dropout(x, pieces=(2, 2), index_i=0, index_j=0):
+            dim = x.shape
+            l_i = dim[2] // pieces[0]
+            l_j = dim[3] // pieces[1]
 
+            # [i_s:i_e, j_s:j_e]对应之前b_sub中间部分=1
+            i_s = index_i * dim[2] // pieces[0]
+            i_e = i_s + l_i
+            j_s = index_j * dim[3] // pieces[1]
+            j_e = j_s + l_j
+
+            x_split = torch.zeros((dim[0], dim[1], l_i + 2, l_j + 2))
+            x_split = x_split.cuda()
+            x_split[:, :, 1: l_i + 1, 1: l_j + 1] = x[:, :, i_s: i_e, j_s: j_e]
+
+            alpha = 0.5
+            if index_i == 0 and index_j == 0:
+                x_split[:, :, l_i + 1, 1: l_j + 2] = F.dropout(x[:, :, i_e, 0: j_e + 1], alpha, True) * (1 - alpha)
+                x_split[:, :, 1: l_i + 1, l_j + 1] = F.dropout(x[:, :, 0: i_e, j_e], alpha, True) * (1 - alpha)
+            if index_i == 0 and index_j == 1:
+                x_split[:, :, l_i + 1, 0: l_j + 1] = F.dropout(x[:, :, i_e, j_s - 1: j_e], alpha, True) * (1 - alpha)
+                x_split[:, :, 1: l_i + 1, 0] = F.dropout(x[:, :, 0: i_e, j_s - 1], alpha, True) * (1 - alpha)
+            if index_i == 1 and index_j == 0:
+                x_split[:, :, 0, 1: l_j + 2] = F.dropout(x[:, :, i_s - 1, 0: j_e + 1], alpha, True) * (1 - alpha)
+                x_split[:, :, 1: l_i + 1, l_j + 1] = F.dropout(x[:, :, i_s: i_e, j_e], alpha, True) * (1 - alpha)
+            if index_i == 1 and index_j == 1:
+                x_split[:, :, 0, 0: l_j + 1] = F.dropout(x[:, :, i_s - 1, j_s - 1: j_e], alpha, True) * (1 - alpha)
+                x_split[:, :, 1: l_i + 1, 0] = F.dropout(x[:, :, i_s: i_e, j_s - 1], alpha, True) * (1 - alpha)
+
+            return x_split.cuda()
+        
         def split_2(x, pieces):
             
             dim = x.shape
@@ -168,10 +186,17 @@ class lossy_Conv2d_new(nn.Module):
 
         # x11, x12, x21, x22 = split_2(x, self.pieces)
 
-        x11 = split(x, self.pieces, 0, 0)
-        x12 = split(x, self.pieces, 0, 1)
-        x21 = split(x, self.pieces, 1, 0)
-        x22 = split(x, self.pieces, 1, 1)
+        '''
+        x11 = split_rand(x, self.pieces, 0, 0)
+        x12 = split_rand(x, self.pieces, 0, 1)
+        x21 = split_rand(x, self.pieces, 1, 0)
+        x22 = split_rand(x, self.pieces, 1, 1)
+        '''
+
+        x11 = split_dropout(x, self.pieces, 0, 0)
+        x12 = split_dropout(x, self.pieces, 0, 1)
+        x21 = split_dropout(x, self.pieces, 1, 0)
+        x22 = split_dropout(x, self.pieces, 1, 1)
 
         # time1 = time.time()
         r11 = self.b1(x11)
