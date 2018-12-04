@@ -220,7 +220,7 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
 
     # Save checkpoint.
     acc = 100. * correct / total
-    print("Epoch %d finish, test acc : %f, best add : " % (epoch, acc, best_acc))
+    print("Epoch %d finish, test acc : %f, best add : %f" % (epoch, acc, best_acc))
     writer.add_scalar('Acc', acc, epoch)
     writer.add_scalar('Loss', test_loss, epoch)
 
