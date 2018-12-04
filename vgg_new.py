@@ -96,18 +96,27 @@ class lossy_Conv2d_new(nn.Module):
         def split(x, pieces):
             
             dim = x.shape
-            x11 = x[:, :, 0: dim[2] // pieces[0], 0: dim[3] // pieces[1]]
-            x12 = x[:, :, 0: dim[2] // pieces[0], dim[3] // pieces[1]: dim[3]]
-            x21 = x[:, :, dim[2] // pieces[0]: dim[2], 0: dim[3] // pieces[1]]
-            x22 = x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]]
+            x11 = torch.empty((dim[0], dim[1], dim[2] // pieces[0], dim[3] // pieces[1]))
+            x12 = torch.empty((dim[0], dim[1], dim[2] // pieces[0], dim[3] // pieces[1]))
+            x21 = torch.empty((dim[0], dim[1], dim[2] // pieces[0], dim[3] // pieces[1]))
+            x22 = torch.empty((dim[0], dim[1], dim[2] // pieces[0], dim[3] // pieces[1]))
+
             x11 = x11.cuda()
             x12 = x12.cuda()
             x21 = x21.cuda()
             x22 = x22.cuda()
+
+            x11 = x[:, :, 0: dim[2] // pieces[0], 0: dim[3] // pieces[1]]
+            x12 = x[:, :, 0: dim[2] // pieces[0], dim[3] // pieces[1]: dim[3]]
+            x21 = x[:, :, dim[2] // pieces[0]: dim[2], 0: dim[3] // pieces[1]]
+            x22 = x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]]
+
             x11 = F.pad(x11, (1, 1, 1, 1, 0, 0, 0, 0))
             x12 = F.pad(x12, (1, 1, 1, 1, 0, 0, 0, 0))
             x21 = F.pad(x21, (1, 1, 1, 1, 0, 0, 0, 0))
             x22 = F.pad(x22, (1, 1, 1, 1, 0, 0, 0, 0))
+
+
 
             '''
             x11 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
