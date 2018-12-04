@@ -245,7 +245,6 @@ def main():
     start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
     print('==> Building model..')
-    print("lr = ", args.lr)
     time_buildmodel_start = time.time()
     net = vgg_new.VGG('VGG16', args.dataset, args.original)
     time_buildmodel_end = time.time()
@@ -274,7 +273,7 @@ def main():
         name = name + 'Original_'
     else:
         name = name + 'Distributed_'
-    name = name + args.dataset
+    name = name + args.dataset + args.lr
     print(name)
     writer = SummaryWriter('logs/' + name)
     train_loader, test_loader = load_data()
