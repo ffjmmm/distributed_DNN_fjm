@@ -36,7 +36,7 @@ class lossy_Conv2d_new(nn.Module):
 
     def forward(self, x):
         # print("x shape : ", x.shape)
-
+        '''
         def split(x, pieces=(2, 2), index_i=0, index_j=0):
             dim = x.shape
             l_i = dim[2] // pieces[0]
@@ -91,12 +91,22 @@ class lossy_Conv2d_new(nn.Module):
                 x_split[:, :, l_i + 1, l_j + 1] = x[:, :, i_e, j_e] * rand[:, :, 0, 0].cuda()
 
             return x_split.cuda()
-
         '''
+
         def split(x, pieces):
             
             dim = x.shape
+            x11 = x[:, :, 0: dim[2] // pieces[0], 0: dim[3] // pieces[1]]
+            x12 = x[:, :, 0: dim[2] // pieces[0], dim[3] // pieces[1]: dim[3]]
+            x21 = x[:, :, dim[2] // pieces[0]: dim[2], 0: dim[3] // pieces[1]]
+            x22 = x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]]
 
+            x11 = F.pad(x11, (1, 1, 1, 1, 0, 0, 0, 0))
+            x12 = F.pad(x12, (1, 1, 1, 1, 0, 0, 0, 0))
+            x21 = F.pad(x21, (1, 1, 1, 1, 0, 0, 0, 0))
+            x22 = F.pad(x22, (1, 1, 1, 1, 0, 0, 0, 0))
+
+            '''
             x11 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
             # x11 = x11.cuda()
             x11.copy_(x[:, :, 0: dim[2] // pieces[0] + 1, 0: dim[3] // pieces[1] + 1])
@@ -139,10 +149,8 @@ class lossy_Conv2d_new(nn.Module):
                 x[:, :, dim[2] // pieces[0]: dim[2], 0: dim[3] // pieces[1]]
             x22[:, :, 1: dim[2] // pieces[0] + 1, 1: dim[3] // pieces[1] + 1] = \
                 x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]]
-
+            '''
             return x11.cuda(), x12.cuda(), x21.cuda(), x22.cuda()
-        '''
-
 
         # x11, x12, x21, x22 = split(x, self.pieces)
 
