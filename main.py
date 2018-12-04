@@ -261,7 +261,7 @@ def main():
         checkpoint = torch.load('./checkpoint/ckpt.t7')
         net.load_state_dict(checkpoint['net'])
         best_acc = checkpoint['acc']
-        start_epoch = checkpoint['epoch']
+        start_epoch = checkpoint['epoch'] + 1
 
     print("Building model spends %fs\n" % (time_buildmodel_end - time_buildmodel_start))
 
