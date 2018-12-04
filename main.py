@@ -273,7 +273,7 @@ def main():
         name = name + 'Original_'
     else:
         name = name + 'Distributed_'
-    name = name + args.dataset + str(args.lr)
+    name = name + args.dataset + '_' + str(args.lr)
     print(name)
     writer = SummaryWriter('logs/' + name)
     train_loader, test_loader = load_data()
