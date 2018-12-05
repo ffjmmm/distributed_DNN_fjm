@@ -24,7 +24,7 @@ cfg = {
 
 # new lossy_Conv2d without mask matrix
 class lossy_Conv2d_new(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, padding=1, num_pieces=(2, 2), alpha):
+    def __init__(self, in_channels, out_channels, alpha, kernel_size=3, padding=1, num_pieces=(2, 2)):
         super(lossy_Conv2d_new, self).__init__()
 
         # for each pieces, define a new conv operation
