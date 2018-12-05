@@ -31,6 +31,7 @@ parser.add_argument('--print_freq', default=20, type=int, help='print frequency'
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='weight decay')
 parser.add_argument('--epoch', default=200, type=int, help='training epoch')
+parser.add_argument('--alpha', default=0.4, type=float, help='edge pixels loss')
 args = parser.parse_args()
 
 
@@ -246,7 +247,7 @@ def main():
 
     print('==> Building model..')
     time_buildmodel_start = time.time()
-    net = vgg_new.VGG('VGG16', args.dataset, args.original)
+    net = vgg_new.VGG('VGG16', args.dataset, args.original, args.alpha)
     time_buildmodel_end = time.time()
 
     net = net.to(device)
@@ -273,7 +274,7 @@ def main():
         name = name + 'Original_'
     else:
         name = name + 'Distributed_'
-    name = name + args.dataset + '_' + str(args.lr)
+    name = name + args.dataset + '_' + str(args.lr) + '_' + str(args.alpha)
     print(name)
     writer = SummaryWriter('logs/' + name)
     train_loader, test_loader = load_data()

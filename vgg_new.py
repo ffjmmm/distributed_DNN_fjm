@@ -24,11 +24,12 @@ cfg = {
 
 # new lossy_Conv2d without mask matrix
 class lossy_Conv2d_new(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, padding=1, num_pieces=(2, 2)):
+    def __init__(self, in_channels, out_channels, kernel_size=3, padding=1, num_pieces=(2, 2), alpha):
         super(lossy_Conv2d_new, self).__init__()
 
         # for each pieces, define a new conv operation
         self.pieces = num_pieces
+        self.alpha = alpha
         self.b1 = nn.Sequential(
             # use the parameters instead of numbers
             nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=0)
@@ -162,7 +163,7 @@ class lossy_Conv2d_new(nn.Module):
             x22.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], dim[3] // pieces[1] - 1: dim[3]])
             '''
 
-            alpha = 0.4
+            alpha = self.alpha
             x11 = F.dropout(x11, p=alpha, training=True) * (1 - alpha)
             x12 = F.dropout(x12, p=alpha, training=True) * (1 - alpha)
             x21 = F.dropout(x21, p=alpha, training=True) * (1 - alpha)
@@ -307,7 +308,7 @@ class Quant_ReLU(nn.Module):
 
 
 class VGG(nn.Module):
-    def __init__(self, vgg_name, dataset, original):
+    def __init__(self, vgg_name, dataset, original, alpha):
         super(VGG, self).__init__()
         # only accept VGG16
         self.features1 = self._make_layers(cfg['VGG16_1'], 3)
@@ -316,8 +317,8 @@ class VGG(nn.Module):
             self.features3 = self._make_layers(cfg['VGG16_3'], 128)
             self.features4 = self._make_layers(cfg['VGG16_4'], 256)
         else :
-            self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128)
-            self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256)
+            self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128, alpha)
+            self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256, alpha)
         self.features5 = self._make_layers(cfg['VGG16_5'], 512)
         if dataset == 'CIFFAR10':
             self.classifier = nn.Linear(512, 10)
@@ -383,13 +384,13 @@ class VGG(nn.Module):
         layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
         return nn.Sequential(*layers)
 
-    def _make_layers_lossy_conv(self, cfg, in_channels, relu_change=0):
+    def _make_layers_lossy_conv(self, cfg, in_channels, alpha, relu_change=0):
         layers = []
         for x in cfg:
             if x == 'M':
                 layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
             else:
-                layers += [lossy_Conv2d_new(in_channels, x, kernel_size=3, padding=1),
+                layers += [lossy_Conv2d_new(in_channels, x, kernel_size=3, padding=1, alpha=alpha),
                            nn.BatchNorm2d(x, affine=False),
                            Quant_ReLU(lower_bound=.5, upper_bound=.8, num_bits=4.)]
                 in_channels = x
