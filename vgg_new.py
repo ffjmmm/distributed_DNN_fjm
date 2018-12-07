@@ -328,6 +328,7 @@ class VGG(nn.Module):
     def forward(self, x):
         # split x
         # time1 = time.time()
+
         out = self.features1(x)
         out = self.features2(out)
         '''

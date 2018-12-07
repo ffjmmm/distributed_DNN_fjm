@@ -225,6 +225,17 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     writer.add_scalar('Acc', acc, epoch)
     writer.add_scalar('Loss', test_loss, epoch)
 
+    if epoch % 30 == 0:
+        print('Saving..')
+        state = {
+            'net': net.state_dict(),
+            'acc': acc,
+            'epoch': epoch,
+        }
+        if not os.path.isdir('checkpoint'):
+            os.mkdir('checkpoint')
+        torch.save(state, './checkpoint/ckpt_' + args.dataset + '.t7')
+
     if acc > best_acc:
         print('Saving..')
         state = {
