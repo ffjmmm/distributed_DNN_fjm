@@ -260,8 +260,8 @@ def main():
 
     print('==> Building model..')
     time_buildmodel_start = time.time()
-    net = models.vgg16()
-    # net = vgg_new.VGG('VGG16', args.dataset, args.original, args.alpha)
+    # net = models.vgg16()
+    net = vgg_new.VGG('VGG16', args.dataset, args.original, args.alpha)
     time_buildmodel_end = time.time()
 
     net = net.to(device)
@@ -283,15 +283,13 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    name = 'VGG_torchvision_lr=' + str(args.lr)
-    '''
+    # name = 'VGG_torchvision_lr=' + str(args.lr)
     name = 'VGG_no_split_'
     if args.original:
         name = name + 'Original_lr=' + str(args.lr)
     else:
         name = name + 'Distributed_'
         name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha)
-    '''
     print(name)
     writer = SummaryWriter('logs/' + name)
     train_loader, test_loader = load_data()
