@@ -134,7 +134,7 @@ def load_data():
 
         # train data augmentation on the fly
         train_transform = transforms.Compose([
-            transforms.Scale(256),
+            transforms.Scale(256, Image.LANCZOS),
             transforms.RandomCrop(224),
             transforms.RandomHorizontalFlip(),
             transforms.Lambda(enhance),
@@ -146,8 +146,8 @@ def load_data():
         ])
 
         test_transform = transforms.Compose([
-            transforms.Scale(256),
-            transforms.RandomCrop(224),
+            transforms.Scale(256, Image.LANCZOS),
+            transforms.CenterCrop(224),
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=[0.485, 0.456, 0.406],
@@ -286,7 +286,7 @@ def main():
     # name = 'VGG_torchvision_lr=' + str(args.lr)
     name = 'VGG_no_split_'
     if args.original:
-        name = name + 'Original_lr=' + str(args.lr)
+        name = name + 'Original_' + args.dataset + '_lr=' + str(args.lr)
     else:
         name = name + 'Distributed_'
         name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha)
