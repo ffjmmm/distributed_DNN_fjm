@@ -61,6 +61,7 @@ def load_data():
         classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
     else:
+        '''
         def default_loader(path):
             return Image.open(path).convert('RGB')
 
@@ -132,8 +133,8 @@ def load_data():
 
         # train data augmentation on the fly
         train_transform = transforms.Compose([
-            transforms.Scale(384, Image.LANCZOS),
-            transforms.RandomCrop(299),
+            transforms.Scale(256),
+            transforms.RandomCrop(224),
             transforms.RandomHorizontalFlip(),
             transforms.Lambda(enhance),
             transforms.ToTensor(),
@@ -143,8 +144,9 @@ def load_data():
             ),
         ])
 
-        # validation data is already resized
         test_transform = transforms.Compose([
+            transforms.Scale(256),
+            transforms.RandomCrop(224),
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=[0.485, 0.456, 0.406],
@@ -152,11 +154,10 @@ def load_data():
             ),
         ])
 
-        train_set = torchvision.datasets.ImageFolder('./data/' + 'train_no_resizing', train_transform)
-        train_loader = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True, num_workers=2)
+        train_set = torchvision.datasets.ImageFolder('./data/' + 'train', train_transform)
+        train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=2)
         test_set = torchvision.datasets.ImageFolder('./data/' + 'test', test_transform)
-        test_loader = torch.utils.data.DataLoader(test_set, batch_size=128, shuffle=False, num_workers=2)
-        '''
+        test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=2)
 
     time_data_end = time.time()
     print("Preparing data spends %fs\n" % (time_data_end - time_data_start))

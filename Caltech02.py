@@ -1,6 +1,8 @@
 import os
+from PIL import Image
+import shutil
 
-data_path = "./data/256_ObjectCategories"
+data_path = "./data/256_ObjectCategories/train"
 
 dirs = os.listdir(data_path)
 dirs.sort()
@@ -18,6 +20,18 @@ for d in dirs:
 			Matrix[it].append(os.path.join(os.path.join(data_path, d), i))
 	it = it + 1
 
+
+for i in range(len(Matrix)):
+	for j in range(10):
+		label = Matrix[i][j].split('/')[4]
+		path = './data/256_ObjectCategories/test/' + label
+		if not os.path.exists(path):
+			os.mkdir(path)
+		fullpath = path + '/' + Matrix[i][j].split('/')[5]
+		shutil.move(Matrix[i][j], fullpath)
+
+
+'''
 with open(r'dataset-test.txt', 'w', encoding='utf-8') as f:
 	for i in range(len(Matrix)):
 		for j in range(10):
@@ -35,4 +49,4 @@ with open(r'dataset-train.txt', 'w', encoding='utf-8') as f:
 			f.write(' ')
 			f.write(str(i))
 			f.write('\n')
-
+'''
