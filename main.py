@@ -136,7 +136,7 @@ def load_data():
             transforms.Scale(256, Image.LANCZOS),
             transforms.RandomCrop(224),
             transforms.RandomHorizontalFlip(),
-            # transforms.Lambda(enhance),
+            transforms.Lambda(enhance),
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=[0.485, 0.456, 0.406],
