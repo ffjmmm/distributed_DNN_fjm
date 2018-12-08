@@ -11,7 +11,6 @@ from PIL import Image, ImageEnhance
 
 import torchvision
 import torchvision.transforms as transforms
-import torchvision.models as models
 
 from tensorboardX import SummaryWriter
 
@@ -260,8 +259,7 @@ def main():
 
     print('==> Building model..')
     time_buildmodel_start = time.time()
-    net = models.vgg16()
-    # net = vgg_new.VGG('VGG16', args.dataset, args.original, args.alpha)
+    net = vgg_new.VGG('VGG16', args.dataset, args.original, args.alpha)
     time_buildmodel_end = time.time()
 
     net = net.to(device)
@@ -283,8 +281,6 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    name = 'VGG_torchvision_' + args.dataset + '_lr=' + str(args.lr)
-    '''
     name = 'VGG_no_split_'
     if args.original:
         name = name + 'Original_' + args.dataset + '_lr=' + str(args.lr)
@@ -292,7 +288,7 @@ def main():
         name = name + 'Distributed_'
         name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha)
     print(name)
-    '''
+
     writer = SummaryWriter('logs/' + name)
     train_loader, test_loader = load_data()
     print('==> Training..')
