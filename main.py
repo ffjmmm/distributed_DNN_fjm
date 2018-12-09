@@ -281,7 +281,7 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    name = 'VGG_no_split_'
+    name = 'VGG_'
     if args.original:
         name = name + 'Original_' + args.dataset + '_lr=' + str(args.lr)
     else:
