@@ -166,7 +166,7 @@ def load_data():
 
 
 # Training
-def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
+def train(net, device, optimizer, criterion, epoch, train_loader):
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
@@ -286,13 +286,14 @@ def main():
         name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha)
     print(name)
 
-    writer = SummaryWriter('logs/' + name)
+    # writer = SummaryWriter('logs/' + name)
     train_loader, test_loader = load_data()
     print('==> Training..')
     for epoch in range(start_epoch, start_epoch + args.epoch):
-        train(net, device, optimizer, criterion, epoch, train_loader, writer)
-        best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
-    writer.close()
+        train(net, device, optimizer, criterion, epoch, train_loader)
+        best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
+        # best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
+    # writer.close()
 
 
 if __name__ == '__main__':
