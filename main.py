@@ -130,7 +130,7 @@ def load_data():
 
         # train data augmentation on the fly
         train_transform = transforms.Compose([
-            transforms.Scale(256, Image.LANCZOS),
+            transforms.Resize(256),
             transforms.RandomCrop(224),
             transforms.RandomHorizontalFlip(),
             transforms.Lambda(enhance),
@@ -142,7 +142,7 @@ def load_data():
         ])
         
         test_transform = transforms.Compose([
-            transforms.Scale(256, Image.LANCZOS),
+            transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
             transforms.Normalize(
