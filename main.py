@@ -61,28 +61,25 @@ def load_data():
         classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
     else:
-        '''
         def default_loader(path):
             return Image.open(path).convert('RGB')
 
         class MyDataset(Dataset):
-            def __init__(self, txt, transform=None, target_transform=None, loader=default_loader):
-                fh = open(txt, 'r')
+            def __init__(self, txt, transform=None, loader=default_loader):
+                f = open(txt, 'r')
                 imgs = []
-                for line in fh:
+                for line in f:
                     line = line.rstrip()
                     line = line.strip('\n')
                     line = line.rstrip()
                     words = line.split()
-                    imgs.append((words[0], int(words[1])))
+                    img = loader(words[0])
+                    imgs.append((img, int(words[1])))
                 self.imgs = imgs
                 self.transform = transform
-                self.target_transform = target_transform
-                self.loader = loader
 
             def __getitem__(self, index):
-                fn, label = self.imgs[index]
-                img = self.loader(fn)
+                img, label = self.imgs[index]
                 if self.transform is not None:
                     img = self.transform(img)
                 return img, label
@@ -90,6 +87,7 @@ def load_data():
             def __len__(self):
                 return len(self.imgs)
 
+        '''
         mean = [0.485, 0.456, 0.406]
         std = [0.229, 0.224, 0.225]
 
@@ -105,9 +103,8 @@ def load_data():
         train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True, num_workers=2)
         test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, num_workers=2)
 
-
-
         '''
+
         enhancers = {
             0: lambda image, f: ImageEnhance.Color(image).enhance(f),
             1: lambda image, f: ImageEnhance.Contrast(image).enhance(f),
@@ -154,10 +151,12 @@ def load_data():
             ),
         ])
 
-        train_set = torchvision.datasets.ImageFolder('./data/256_ObjectCategories/' + 'train', train_transform)
-        train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=2)
-        test_set = torchvision.datasets.ImageFolder('./data/256_ObjectCategories/' + 'test', test_transform)
-        test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=2)
+        train_set = MyDataset(txt='./dataset-train.txt', transform=train_transform)
+        test_set = MyDataset(txt='./dataset-test.txt', transform=test_transform)
+        # train_set = torchvision.datasets.ImageFolder('./data/256_ObjectCategories/' + 'train', train_transform)
+        # test_set = torchvision.datasets.ImageFolder('./data/256_ObjectCategories/' + 'test', test_transform)
+        train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=32)
+        test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=32)
 
     time_data_end = time.time()
     print("Preparing data spends %fs\n" % (time_data_end - time_data_start))

@@ -1,6 +1,6 @@
 import os
 
-data_path = "./data/256_ObjectCategories/train"
+data_path = "./data/256_ObjectCategories"
 
 d = os.listdir(data_path)
 d.sort()
