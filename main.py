@@ -23,7 +23,7 @@ import vgg_new
 
 parser = argparse.ArgumentParser(description='PyTorch Training')
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
-parser.add_argument('--batch_size', '-bs', default=64, type=int, help='set batch size')
+parser.add_argument('--batch_size', '-bs', default=256, type=int, help='set batch size')
 parser.add_argument('--resume', '-r', action="store_true", help='resume from checkpoint')
 parser.add_argument('--original', action="store_true", help='use original VGG')
 parser.add_argument('--dataset', type=str, default='Caltech256', help='choose the dataset')
@@ -174,11 +174,11 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
     total = 0
     time1 = time.time()
     for batch_idx, (inputs, targets) in enumerate(train_loader):
+        time2 = time.time()
+        data_time = time2 - time1
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
-        # time2 = time.time()
-        # print(">>>>>>>>>>forward time = ", time2 - time1, ">>>>>>>>>>>>>")
         loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
@@ -188,19 +188,16 @@ def train(net, device, optimizer, criterion, epoch, train_loader, writer=None):
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
+        '''
         if batch_idx % args.print_freq == 0:
             time2 = time.time()
             print('Epoch: %d [%d/%d]: loss = %f, acc = %f time = %d' % (epoch, batch_idx, len(train_loader), loss.item(),
                                                              predicted.eq(targets).sum().item() / targets.size(0), time2 - time1))
             time1 = time.time()
-
         '''
         time1 = time.time()
-        print(">>>>>>>>>>>backward time = ", time1 - time2)
-
-        if (batch_idx + 1) % 5 == 0:
-            break
-        '''
+        batch_time = time1 - time2
+        print("data_time: ", data_time, "batch_time: ", batch_time)
 
 
 def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
