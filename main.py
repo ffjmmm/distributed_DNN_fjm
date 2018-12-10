@@ -284,7 +284,7 @@ def main():
         name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha) + '_bs=' + str(args.batch_size)
     print(name)
 
-    writer = SummaryWriter('logs/' + name)
+    writer = SummaryWriter('logs/Caltech256/' + name)
     train_loader, test_loader = load_data()
     print('==> Training..')
     for epoch in range(start_epoch, start_epoch + args.epoch):
