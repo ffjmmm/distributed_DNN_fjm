@@ -173,8 +173,8 @@ def train(net, device, optimizer, criterion, epoch, train_loader):
     total = 0
     time1 = time.time()
     for batch_idx, (inputs, targets) in enumerate(train_loader):
-        time2 = time.time()
-        data_time = time2 - time1
+        # time2 = time.time()
+        # data_time = time2 - time1
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
@@ -187,16 +187,15 @@ def train(net, device, optimizer, criterion, epoch, train_loader):
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-        '''
         if batch_idx % args.print_freq == 0:
             time2 = time.time()
             print('Epoch: %d [%d/%d]: loss = %f, acc = %f time = %d' % (epoch, batch_idx, len(train_loader), loss.item(),
                                                              predicted.eq(targets).sum().item() / targets.size(0), time2 - time1))
             time1 = time.time()
-        '''
-        time1 = time.time()
-        batch_time = time1 - time2
-        print("data_time: ", data_time, "batch_time: ", batch_time)
+
+        # time1 = time.time()
+        # batch_time = time1 - time2
+        # print("data_time: ", data_time, "batch_time: ", batch_time)
 
 
 def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
@@ -279,20 +278,20 @@ def main():
 
     name = 'VGG_'
     if args.original:
-        name = name + 'Original_' + args.dataset + '_lr=' + str(args.lr)
+        name = name + 'Original_' + args.dataset + '_lr=' + str(args.lr) + '_bs=' + str(args.batch_size)
     else:
         name = name + 'Distributed_'
-        name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha)
+        name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha) + '_bs=' + str(args.batch_size)
     print(name)
 
-    # writer = SummaryWriter('logs/' + name)
+    writer = SummaryWriter('logs/' + name)
     train_loader, test_loader = load_data()
     print('==> Training..')
     for epoch in range(start_epoch, start_epoch + args.epoch):
         train(net, device, optimizer, criterion, epoch, train_loader)
-        best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
-        # best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
-    # writer.close()
+        # best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
+        best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
+    writer.close()
 
 
 if __name__ == '__main__':
