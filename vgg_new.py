@@ -395,7 +395,7 @@ def test():
     net = net.to('cuda')
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
-    x = torch.randn(256, 3, 224, 224)
+    x = torch.randn(64, 3, 224, 224)
     y = net(x)
 
 
