@@ -391,7 +391,7 @@ class VGG(nn.Module):
 
 
 def test():
-    net = VGG('VGG16', 'Caltech256')
+    net = VGG('VGG16', 'Caltech256', False, 0.5)
     net = net.to('cuda')
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
