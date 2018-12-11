@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
+import random
 
 import time
 
@@ -20,15 +21,28 @@ cfg = {
     'VGG19': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
 }
 
-
-# mask = torch.FloatTensor(256, 300, 114, 114).uniform_() > 0.5
-# mask[:, 1: 113, 1: 113] = 1;
+'''
+alpha = 0.4
+mask_56 = torch.FloatTensor(256, 1000, 30, 30).uniform_() > alpha
+mask_56[:, :, 1: 29, 1: 29] = 1
+mask_56 = mask_56.cuda()
+mask_28 = torch.FloatTensor(256, 2000, 16, 16).uniform_() > alpha
+mask_28[:, :, 1: 15, 1: 15] = 1
+mask_28 = mask_28.cuda()
+'''
 
 
 # new lossy_Conv2d without mask matrix
 class lossy_Conv2d_new(nn.Module):
     def __init__(self, in_channels, out_channels, alpha, kernel_size=3, padding=1, num_pieces=(2, 2)):
         super(lossy_Conv2d_new, self).__init__()
+
+        mask_56 = torch.FloatTensor(256, 1000, 30, 30).uniform_() > alpha
+        mask_56[:, :, 1: 29, 1: 29] = 1
+        self.mask_56 = mask_56.cuda()
+        mask_28 = torch.FloatTensor(256, 2000, 16, 16).uniform_() > alpha
+        mask_28[:, :, 1: 15, 1: 15] = 1
+        self.mask_28 = mask_28.cuda()
 
         # for each pieces, define a new conv operation
         self.pieces = num_pieces
@@ -146,7 +160,24 @@ class lossy_Conv2d_new(nn.Module):
             x21 = x21.cuda()
             x22 = x22.cuda()
 
-
+            if dim[2] == 56:
+                offset = random.randint(0, 1000 - dim[1] - 1)
+                x11 = x11 * self.mask_56[:, offset: offset + dim[1], :, :]
+                offset = random.randint(0, 1000 - dim[1] - 1)
+                x12 = x12 * self.mask_56[:, offset: offset + dim[1], :, :]
+                offset = random.randint(0, 1000 - dim[1] - 1)
+                x21 = x21 * self.mask_56[:, offset: offset + dim[1], :, :]
+                offset = random.randint(0, 1000 - dim[1] - 1)
+                x22 = x22 * self.mask_56[:, offset: offset + dim[1], :, :]
+            else:
+                offset = random.randint(0, 2000 - dim[1] - 1)
+                x11 = x11 * self.mask_28[:, offset: offset + dim[1], :, :]
+                offset = random.randint(0, 2000 - dim[1] - 1)
+                x12 = x12 * self.mask_28[:, offset: offset + dim[1], :, :]
+                offset = random.randint(0, 2000 - dim[1] - 1)
+                x21 = x21 * self.mask_28[:, offset: offset + dim[1], :, :]
+                offset = random.randint(0, 2000 - dim[1] - 1)
+                x22 = x22 * self.mask_28[:, offset: offset + dim[1], :, :]
 
             '''
             alpha = self.alpha
@@ -399,4 +430,4 @@ def test():
     y = net(x)
 
 
-test()
+# test()
