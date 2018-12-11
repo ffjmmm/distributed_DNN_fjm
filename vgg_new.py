@@ -21,6 +21,10 @@ cfg = {
 }
 
 
+# mask = torch.FloatTensor(256, 300, 114, 114).uniform_() > 0.5
+# mask[:, 1: 113, 1: 113] = 1;
+
+
 # new lossy_Conv2d without mask matrix
 class lossy_Conv2d_new(nn.Module):
     def __init__(self, in_channels, out_channels, alpha, kernel_size=3, padding=1, num_pieces=(2, 2)):
@@ -35,7 +39,7 @@ class lossy_Conv2d_new(nn.Module):
         )
 
     def forward(self, x):
-        # print("x shape : ", x.shape)
+        print("x shape : ", x.shape)
 
         def split_rand(x, pieces=(2, 2), index_i=0, index_j=0):
             dim = x.shape
@@ -132,19 +136,6 @@ class lossy_Conv2d_new(nn.Module):
             x21 = x[:, :, dim[2] // pieces[0] - 1: dim[2], 0: dim[3] // pieces[1] + 1]
             x22 = x[:, :, dim[2] // pieces[0] - 1: dim[2], dim[3] // pieces[1] - 1: dim[3]]
 
-            '''
-            x11 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
-            x12 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
-            x21 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
-            x22 = torch.empty((dim[0], dim[1], dim[2] // pieces[0] + 1, dim[3] // pieces[1] + 1))
-            '''
-            '''
-            x11 = F.pad(x11, (1, 1, 1, 1, 0, 0, 0, 0))
-            x12 = F.pad(x12, (1, 1, 1, 1, 0, 0, 0, 0))
-            x21 = F.pad(x21, (1, 1, 1, 1, 0, 0, 0, 0))
-            x22 = F.pad(x22, (1, 1, 1, 1, 0, 0, 0, 0))
-            '''
-
             x11 = F.pad(x11, (1, 0, 1, 0, 0, 0, 0, 0))
             x12 = F.pad(x12, (0, 1, 1, 0, 0, 0, 0, 0))
             x21 = F.pad(x21, (1, 0, 0, 1, 0, 0, 0, 0))
@@ -155,13 +146,9 @@ class lossy_Conv2d_new(nn.Module):
             x21 = x21.cuda()
             x22 = x22.cuda()
 
-            '''
-            x11.copy_(x[:, :, 0: dim[2] // pieces[0] + 1, 0: dim[3] // pieces[1] + 1])
-            x12.copy_(x[:, :, 0: dim[2] // pieces[0] + 1, dim[3] // pieces[1] - 1: dim[3]])
-            x21.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], 0: dim[3] // pieces[1] + 1])
-            x22.copy_(x[:, :, dim[2] // pieces[0] - 1: dim[2], dim[3] // pieces[1] - 1: dim[3]])
-            '''
 
+
+            '''
             alpha = self.alpha
             x11 = F.dropout(x11, p=alpha, training=True) * (1 - alpha)
             x12 = F.dropout(x12, p=alpha, training=True) * (1 - alpha)
@@ -172,6 +159,7 @@ class lossy_Conv2d_new(nn.Module):
             x12[:, :, 1: dim[2] // 2 + 1, 1: dim[3] // 2 + 1] = x[:, :, 0: dim[2] // pieces[0], dim[3] // pieces[1]: dim[3]]
             x21[:, :, 1: dim[2] // 2 + 1, 1: dim[3] // 2 + 1] = x[:, :, dim[2] // pieces[0]: dim[2], 0: dim[3] // pieces[1]]
             x22[:, :, 1: dim[2] // 2 + 1, 1: dim[3] // 2 + 1] = x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]]
+            '''
 
             return x11.cuda(), x12.cuda(), x21.cuda(), x22.cuda()
 
@@ -407,8 +395,8 @@ def test():
     net = net.to('cuda')
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
-    x = torch.randn(64, 3, 224, 224)
+    x = torch.randn(256, 3, 224, 224)
     y = net(x)
 
 
-# test()
+test()
