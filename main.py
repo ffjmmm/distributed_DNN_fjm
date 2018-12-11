@@ -178,10 +178,11 @@ def train(net, device, optimizer, criterion, epoch, train_loader):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
+        
         loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
-
+        
         train_loss += loss.item()
         _, predicted = outputs.max(1)
         total += targets.size(0)
@@ -189,14 +190,14 @@ def train(net, device, optimizer, criterion, epoch, train_loader):
 
         if batch_idx % args.print_freq == 0:
             time2 = time.time()
-            print('Epoch: %d [%d/%d]: loss = %f, acc = %f time = %d' % (epoch, batch_idx, len(train_loader), loss.item(),
-                                                             predicted.eq(targets).sum().item() / targets.size(0), time2 - time1))
+            print('Epoch: %d [%d/%d]: loss = %f, acc = %f time = %d' % (epoch, batch_idx, len(train_loader), loss.item(), predicted.eq(targets).sum().item() / targets.size(0), time2 - time1))
             time1 = time.time()
-
-        # time1 = time.time()
-        # batch_time = time1 - time2
-        # print("data_time: ", data_time, "batch_time: ", batch_time)
-
+        
+        '''
+        time1 = time.time()
+        batch_time = time1 - time2
+        print("data_time: ", data_time, "batch_time: ", batch_time)
+        '''
 
 def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     net.eval()

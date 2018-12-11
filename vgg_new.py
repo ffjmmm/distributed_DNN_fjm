@@ -36,14 +36,19 @@ mask_28 = mask_28.cuda()
 class lossy_Conv2d_new(nn.Module):
     def __init__(self, in_channels, out_channels, alpha, kernel_size=3, padding=1, num_pieces=(2, 2)):
         super(lossy_Conv2d_new, self).__init__()
-
-        mask_56 = torch.FloatTensor(256, 1000, 30, 30).uniform_() > alpha
+        '''
+        self.len_56 = 280
+        mask_56 = torch.FloatTensor(32, self.len_56, 30, 30).uniform_() > alpha
         mask_56[:, :, 1: 29, 1: 29] = 1
-        self.mask_56 = mask_56.cuda()
-        mask_28 = torch.FloatTensor(256, 2000, 16, 16).uniform_() > alpha
+        mask_56 = mask_56.float()
+        self.mask_56 = mask_56
+        
+        self.len_28 = 550
+        mask_28 = torch.FloatTensor(32, self.len_28, 16, 16).uniform_() > alpha
         mask_28[:, :, 1: 15, 1: 15] = 1
-        self.mask_28 = mask_28.cuda()
-
+        mask_28 = mask_28.float()
+        self.mask_28 = mask_28
+        '''
         # for each pieces, define a new conv operation
         self.pieces = num_pieces
         self.alpha = alpha
@@ -53,7 +58,7 @@ class lossy_Conv2d_new(nn.Module):
         )
 
     def forward(self, x):
-        print("x shape : ", x.shape)
+        # print("x shape : ", x.shape)
 
         def split_rand(x, pieces=(2, 2), index_i=0, index_j=0):
             dim = x.shape
@@ -108,38 +113,6 @@ class lossy_Conv2d_new(nn.Module):
                 x_split[:, :, l_i + 1, l_j + 1] = x[:, :, i_e, j_e] * rand[:, :, 0, 0].cuda()
 
             return x_split.cuda()
-
-        
-        def split_dropout(x, pieces=(2, 2), index_i=0, index_j=0):
-            dim = x.shape
-            l_i = dim[2] // pieces[0]
-            l_j = dim[3] // pieces[1]
-
-            # [i_s:i_e, j_s:j_e]对应之前b_sub中间部分=1
-            i_s = index_i * dim[2] // pieces[0]
-            i_e = i_s + l_i
-            j_s = index_j * dim[3] // pieces[1]
-            j_e = j_s + l_j
-
-            x_split = torch.zeros((dim[0], dim[1], l_i + 2, l_j + 2))
-            x_split = x_split.cuda()
-            x_split[:, :, 1: l_i + 1, 1: l_j + 1] = x[:, :, i_s: i_e, j_s: j_e]
-
-            alpha = 0.5
-            if index_i == 0 and index_j == 0:
-                x_split[:, :, l_i + 1, 1: l_j + 2] = F.dropout(x[:, :, i_e, 0: j_e + 1], alpha, True) * (1 - alpha)
-                x_split[:, :, 1: l_i + 1, l_j + 1] = F.dropout(x[:, :, 0: i_e, j_e], alpha, True) * (1 - alpha)
-            if index_i == 0 and index_j == 1:
-                x_split[:, :, l_i + 1, 0: l_j + 1] = F.dropout(x[:, :, i_e, j_s - 1: j_e], alpha, True) * (1 - alpha)
-                x_split[:, :, 1: l_i + 1, 0] = F.dropout(x[:, :, 0: i_e, j_s - 1], alpha, True) * (1 - alpha)
-            if index_i == 1 and index_j == 0:
-                x_split[:, :, 0, 1: l_j + 2] = F.dropout(x[:, :, i_s - 1, 0: j_e + 1], alpha, True) * (1 - alpha)
-                x_split[:, :, 1: l_i + 1, l_j + 1] = F.dropout(x[:, :, i_s: i_e, j_e], alpha, True) * (1 - alpha)
-            if index_i == 1 and index_j == 1:
-                x_split[:, :, 0, 0: l_j + 1] = F.dropout(x[:, :, i_s - 1, j_s - 1: j_e], alpha, True) * (1 - alpha)
-                x_split[:, :, 1: l_i + 1, 0] = F.dropout(x[:, :, i_s: i_e, j_s - 1], alpha, True) * (1 - alpha)
-
-            return x_split.cuda()
         
         def split_2(x, pieces):
             
@@ -154,31 +127,36 @@ class lossy_Conv2d_new(nn.Module):
             x12 = F.pad(x12, (0, 1, 1, 0, 0, 0, 0, 0))
             x21 = F.pad(x21, (1, 0, 0, 1, 0, 0, 0, 0))
             x22 = F.pad(x22, (0, 1, 0, 1, 0, 0, 0, 0))
-
+            
             x11 = x11.cuda()
             x12 = x12.cuda()
             x21 = x21.cuda()
             x22 = x22.cuda()
-
+            '''
+            self.mask_28 = self.mask_28.cuda()
+            self.mask_56 = self.mask_56.cuda()
+            
             if dim[2] == 56:
-                offset = random.randint(0, 1000 - dim[1] - 1)
-                x11 = x11 * self.mask_56[:, offset: offset + dim[1], :, :]
-                offset = random.randint(0, 1000 - dim[1] - 1)
-                x12 = x12 * self.mask_56[:, offset: offset + dim[1], :, :]
-                offset = random.randint(0, 1000 - dim[1] - 1)
-                x21 = x21 * self.mask_56[:, offset: offset + dim[1], :, :]
-                offset = random.randint(0, 1000 - dim[1] - 1)
-                x22 = x22 * self.mask_56[:, offset: offset + dim[1], :, :]
-            else:
-                offset = random.randint(0, 2000 - dim[1] - 1)
-                x11 = x11 * self.mask_28[:, offset: offset + dim[1], :, :]
-                offset = random.randint(0, 2000 - dim[1] - 1)
-                x12 = x12 * self.mask_28[:, offset: offset + dim[1], :, :]
-                offset = random.randint(0, 2000 - dim[1] - 1)
-                x21 = x21 * self.mask_28[:, offset: offset + dim[1], :, :]
-                offset = random.randint(0, 2000 - dim[1] - 1)
-                x22 = x22 * self.mask_28[:, offset: offset + dim[1], :, :]
+                offset0 = random.randint(0, self.len_56 - dim[1] - 1)
+                offset1 = random.randint(0, self.len_56 - dim[1] - 1)
+                offset2 = random.randint(0, self.len_56 - dim[1] - 1)
+                offset3 = random.randint(0, self.len_56 - dim[1] - 1)
 
+                x11 = x11 * self.mask_56[:, offset0: offset0 + dim[1], :, :]
+                x12 = x12 * self.mask_56[:, offset1: offset1 + dim[1], :, :]
+                x21 = x21 * self.mask_56[:, offset2: offset2 + dim[1], :, :]
+                x22 = x22 * self.mask_56[:, offset3: offset3 + dim[1], :, :]
+                
+            else:
+                offset0 = random.randint(0, self.len_28 - dim[1] - 1)
+                offset1 = random.randint(0, self.len_28 - dim[1] - 1)
+                offset2 = random.randint(0, self.len_28 - dim[1] - 1)
+                offset3 = random.randint(0, self.len_28 - dim[1] - 1)
+                
+                x11 = x11 * self.mask_28[:, offset0: offset0 + dim[1], :, :]
+                x12 = x12 * self.mask_28[:, offset1: offset1 + dim[1], :, :]
+                x21 = x21 * self.mask_28[:, offset2: offset2 + dim[1], :, :]
+                x22 = x22 * self.mask_28[:, offset3: offset3 + dim[1], :, :]
             '''
             alpha = self.alpha
             x11 = F.dropout(x11, p=alpha, training=True) * (1 - alpha)
@@ -190,8 +168,7 @@ class lossy_Conv2d_new(nn.Module):
             x12[:, :, 1: dim[2] // 2 + 1, 1: dim[3] // 2 + 1] = x[:, :, 0: dim[2] // pieces[0], dim[3] // pieces[1]: dim[3]]
             x21[:, :, 1: dim[2] // 2 + 1, 1: dim[3] // 2 + 1] = x[:, :, dim[2] // pieces[0]: dim[2], 0: dim[3] // pieces[1]]
             x22[:, :, 1: dim[2] // 2 + 1, 1: dim[3] // 2 + 1] = x[:, :, dim[2] // pieces[0]: dim[2], dim[3] // pieces[1]: dim[3]]
-            '''
-
+            
             return x11.cuda(), x12.cuda(), x21.cuda(), x22.cuda()
 
         x11, x12, x21, x22 = split_2(x, self.pieces)
@@ -201,12 +178,6 @@ class lossy_Conv2d_new(nn.Module):
         x12 = split_rand(x, self.pieces, 0, 1)
         x21 = split_rand(x, self.pieces, 1, 0)
         x22 = split_rand(x, self.pieces, 1, 1)
-        '''
-        '''
-        x11 = split_dropout(x, self.pieces, 0, 0)
-        x12 = split_dropout(x, self.pieces, 0, 1)
-        x21 = split_dropout(x, self.pieces, 1, 0)
-        x22 = split_dropout(x, self.pieces, 1, 1)
         '''
 
         # time1 = time.time()
@@ -218,7 +189,7 @@ class lossy_Conv2d_new(nn.Module):
         r2 = torch.cat((r21, r22), 3)
         r_combine = torch.cat((r1, r2), 2)
         #time2 = time.time()
-        #print("conv and combine time = ", time2 - time1)
+        #("conv and combine time = ", time2 - time1)
         return r_combine
 
 
@@ -426,8 +397,12 @@ def test():
     net = net.to('cuda')
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
-    x = torch.randn(64, 3, 224, 224)
-    y = net(x)
+    x = torch.randn(256, 3, 224, 224)
+    for i in range(10):
+        time1 = time.time()
+        y = net(x)
+        time2 = time.time()
+        print(i, " : time = ", time2 - time1)
 
 
 # test()
