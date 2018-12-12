@@ -209,7 +209,6 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     Quant_ReLU_rate = np.zeros((6, 1), dtype=float)
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(test_loader):
-            print(batch_idx)
             inputs, targets = inputs.to(device), targets.to(device)
             vgg_new.init_array()
             outputs = net(inputs)
@@ -227,7 +226,7 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     print("Epoch %d finish, test acc : %f, best add : %f" % (epoch, acc, best_acc))
     writer.add_scalar('Acc', acc, epoch)
     for i in range(6):
-        writer.add_scalar('Quant_ReLU_Rate_' + str(i + 1), Quant_ReLU_rate[i], epoch)
+        writer.add_scalar('Quant_ReLU_Rate_' + str(i + 1), Quant_ReLU_rate[i][0] / 11., epoch)
 
     if epoch % 30 == 0:
         print('Saving..')
@@ -284,24 +283,24 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    name = 'VGG_'
+    name = 'VGG_Rate_'
     if args.original:
         name = name + 'Original_' + args.dataset + '_lr=' + str(args.lr) + '_bs=' + str(args.batch_size)
     else:
         name = name + 'Distributed_'
         name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha) + '_bs=' + str(args.batch_size)
     print(name)
-    # writer = SummaryWriter('logs/Caltech256/' + name)
+    writer = SummaryWriter('logs/Caltech256/' + name)
     train_loader, test_loader = load_data()
     print('==> Training..')
     for epoch in range(start_epoch, start_epoch + args.epoch):
         time_epoch_start = time.time()
         train(net, device, optimizer, criterion, epoch, train_loader)
-        best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
-        # best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
+        # best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
+        best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
         time_epoch_end = time.time()
         print("Epoch time : ", time_epoch_end - time_epoch_start)
-    # writer.close()
+    writer.close()
 
 
 if __name__ == '__main__':
