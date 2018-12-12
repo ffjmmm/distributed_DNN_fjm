@@ -209,14 +209,15 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(test_loader):
             inputs, targets = inputs.to(device), targets.to(device)
+            vgg_new.init_array()
             outputs = net(inputs)
+            vgg_new.print_array()
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
-
 
     # Save checkpoint.
     acc = 100. * correct / total
@@ -292,8 +293,11 @@ def main():
     train_loader, test_loader = load_data()
     print('==> Training..')
     for epoch in range(start_epoch, start_epoch + args.epoch):
+        time_epoch_start = time.time()
         train(net, device, optimizer, criterion, epoch, train_loader)
         best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
+        time_epoch_end = time.time()
+        print("Epoch time : ", time_epoch_end - time_epoch_start)
         # best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
     # writer.close()
 

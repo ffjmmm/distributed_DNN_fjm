@@ -11,12 +11,13 @@ import numpy as np
 import time
 
 
-Quant_ReLU_rate = np.zeros((6, 2), dtype=float)
+num_gpu = 8
+Quant_ReLU_rate = np.zeros((6, num_gpu), dtype=float)
 
 
 def init_array():
     global Quant_ReLU_rate
-    Quant_ReLU_rate = np.zeros((6, 2), dtype=float)
+    Quant_ReLU_rate = np.zeros((6, num_gpu), dtype=float)
 
 
 def print_array():
@@ -309,7 +310,7 @@ class Quant_ReLU(nn.Module):
         num_remain = torch.sum(xx).cpu().numpy()
         flag = True
         for i in range(6):
-            for j in range(2):
+            for j in range(num_gpu):
                 if Quant_ReLU_rate[i][j] == 0:
                     Quant_ReLU_rate[i][j] = num_remain / num_total
                     flag = False
