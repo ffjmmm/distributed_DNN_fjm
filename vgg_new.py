@@ -25,6 +25,11 @@ def print_array():
     print(res)
 
 
+def get_array():
+    res = Quant_ReLU_rate.sum(axis=1)
+    return res
+
+
 cfg = {
     'VGG11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     'VGG13': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -305,8 +310,10 @@ class Quant_ReLU(nn.Module):
         xx = x > 0
         num_total = torch.sum(xx).cpu().numpy()
         xx1 = x > self.lower_bound
+        xx1 = xx1.cuda()
         xx2 = x < self.upper_bound
         xx = xx1 * xx2
+        xx2 = xx2.cuda()
         num_remain = torch.sum(xx).cpu().numpy()
         flag = True
         for i in range(6):
