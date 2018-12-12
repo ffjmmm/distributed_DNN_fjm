@@ -260,7 +260,7 @@ def main():
         name = name + 'Distributed_'
         name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha) + '_bs=' + str(args.batch_size)
     print(name)
-    writer = SummaryWriter('logs/TEST/' + name)
+    # writer = SummaryWriter('logs/TEST/' + name)
     
     print('==> Building model..')
     time_buildmodel_start = time.time()
@@ -291,9 +291,9 @@ def main():
     print('==> Training..')
     for epoch in range(start_epoch, start_epoch + args.epoch):
         train(net, device, optimizer, criterion, epoch, train_loader)
-        # best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
-        best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
-    writer.close()
+        best_acc = test(net, device, criterion, epoch, test_loader, best_acc)
+        # best_acc = test(net, device, criterion, epoch, test_loader, best_acc, writer)
+    # writer.close()
 
 
 if __name__ == '__main__':
