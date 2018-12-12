@@ -6,8 +6,23 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 import random
+import numpy as np
 
 import time
+
+
+Quant_ReLU_rate = np.zeros((6, 2), dtype=float)
+
+
+def init_array():
+    global Quant_ReLU_rate
+    Quant_ReLU_rate = np.zeros((6, 2), dtype=float)
+
+
+def print_array():
+    res = Quant_ReLU_rate.sum(axis=0)
+    print(res)
+
 
 cfg = {
     'VGG11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -292,7 +307,12 @@ class Quant_ReLU(nn.Module):
         xx2 = x < self.upper_bound
         xx = xx1 * xx2
         num_remain = torch.sum(xx).cpu().numpy()
-        print("Quant_ReLU rate : ", num_remain / num_total)
+        for i in range(6):
+            for j in range(2):
+                if Quant_ReLU_rate[i][j] == 0:
+                    Quant_ReLU_rate[i][j] = num_remain / num_total
+                    break
+
         r1 = F.hardtanh(x, self.lower_bound, self.upper_bound) - self.lower_bound
         # print(float(r1[r1>0].shape[0])/r1.view(-1).shape[0])
         # print(r1[0,0,:,:])
@@ -392,7 +412,9 @@ def test():
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
     x = torch.randn(64, 3, 224, 224)
+    init_array()
     y = net(x)
+    print_array()
     
 
 test()
