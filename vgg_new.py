@@ -419,6 +419,7 @@ def test():
     x = torch.randn(64, 3, 224, 224)
     init_array()
     y = net(x)
+    init_array()
     print_array()
     
 
