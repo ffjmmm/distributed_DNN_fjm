@@ -310,6 +310,7 @@ class Quant_ReLU(nn.Module):
         for i in range(6):
             for j in range(2):
                 if Quant_ReLU_rate[i][j] == 0:
+                    print(i, j)
                     Quant_ReLU_rate[i][j] = num_remain / num_total
                     break
 
