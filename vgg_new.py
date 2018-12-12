@@ -317,9 +317,10 @@ class VGG(nn.Module):
     def forward(self, x):
         # split x
         # time1 = time.time()
-        '''
+        
         out = self.features1(x)
         out = self.features2(out)
+        
         '''
         (x1, x2) = torch.chunk(x, 2, 2)
         (x11, x12) = torch.chunk(x1, 2, 3)
@@ -337,7 +338,7 @@ class VGG(nn.Module):
         out1 = torch.cat((out11, out12), 3)
         out2 = torch.cat((out21, out22), 3)
         out = torch.cat((out1, out2), 2)
-    
+        '''
         # time2 = time.time()
         # print("Time for feature 1 and 2: ", time2 - time1)
 
