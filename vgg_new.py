@@ -20,7 +20,7 @@ def init_array():
 
 
 def print_array():
-    res = Quant_ReLU_rate.sum(axis=0)
+    res = Quant_ReLU_rate.sum(axis=1)
     print(res)
 
 
