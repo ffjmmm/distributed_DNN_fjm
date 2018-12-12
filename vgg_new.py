@@ -311,12 +311,13 @@ class Quant_ReLU(nn.Module):
         for i in range(6):
             for j in range(2):
                 if Quant_ReLU_rate[i][j] == 0:
-                    print(i, j)
                     Quant_ReLU_rate[i][j] = num_remain / num_total
                     flag = False
                     break
             if flag == False:
                 break
+        if flag == True:
+            print("ERROR!!!!!!")
 
         r1 = F.hardtanh(x, self.lower_bound, self.upper_bound) - self.lower_bound
         # print(float(r1[r1>0].shape[0])/r1.view(-1).shape[0])
