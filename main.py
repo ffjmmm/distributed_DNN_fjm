@@ -177,7 +177,9 @@ def train(net, device, optimizer, criterion, epoch, train_loader):
         # data_time = time2 - time1
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
+        vgg_new.init_array()
         outputs = net(inputs)
+        vgg_new.print_array()
         
         loss = criterion(outputs, targets)
         loss.backward()
