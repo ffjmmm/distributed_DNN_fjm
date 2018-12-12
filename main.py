@@ -207,7 +207,7 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(test_loader):
             inputs, targets = inputs.to(device), targets.to(device)
-            outputs = net(inputs, batch_idx)
+            outputs = net(inputs)
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()

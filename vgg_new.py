@@ -285,7 +285,15 @@ class Quant_ReLU(nn.Module):
 
         mask = gen_mask(x.shape, self.num_pieces)
         # print(mask[0,0,:,:])
-        r1 = F.hardtanh(x * mask, self.lower_bound, self.upper_bound) - self.lower_bound
+        x = x * mask
+        xx = x > 0
+        num_total = torch.sum(xx)
+        xx1 = x > self.lower_bound
+        xx2 = x < self.upper_bound
+        xx = xx1 * xx2
+        num_remain = torch.sum(xx)
+        print("Quant_ReLU rate : ", num_remain / num_total)
+        r1 = F.hardtanh(x, self.lower_bound, self.upper_bound) - self.lower_bound
         # print(float(r1[r1>0].shape[0])/r1.view(-1).shape[0])
         # print(r1[0,0,:,:])
         # quantize the pixels on the margin
@@ -314,9 +322,8 @@ class VGG(nn.Module):
         else:
             self.classifier = nn.Linear(25088, 257)
 
-    def forward(self, x, batch_idx):
+    def forward(self, x):
         # split x
-        print("batch idx : ", batch_idx)
         '''
         out = self.features1(x)
         out = self.features2(out)
