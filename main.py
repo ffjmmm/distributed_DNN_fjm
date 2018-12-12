@@ -207,7 +207,7 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(test_loader):
             inputs, targets = inputs.to(device), targets.to(device)
-            outputs = net(inputs)
+            outputs = net(inputs, batch_idx)
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()
@@ -260,7 +260,7 @@ def main():
         name = name + 'Distributed_'
         name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha) + '_bs=' + str(args.batch_size)
     print(name)
-    writer = SummaryWriter('logs/CIFFAR10/' + name)
+    writer = SummaryWriter('logs/TEST/' + name)
     
     print('==> Building model..')
     time_buildmodel_start = time.time()

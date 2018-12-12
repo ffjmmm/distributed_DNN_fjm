@@ -314,9 +314,9 @@ class VGG(nn.Module):
         else:
             self.classifier = nn.Linear(25088, 257)
 
-    def forward(self, x):
+    def forward(self, x, batch_idx):
         # split x
-        
+        print("batch idx : ", batch_idx)
         '''
         out = self.features1(x)
         out = self.features2(out)
