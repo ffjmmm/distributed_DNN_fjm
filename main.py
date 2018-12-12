@@ -252,7 +252,16 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     best_acc = 0  # best test accuracy
     start_epoch = 0  # start from epoch 0 or last checkpoint epoch
-
+    
+    name = 'VGG_'
+    if args.original:
+        name = name + 'Original_' + args.dataset + '_lr=' + str(args.lr) + '_bs=' + str(args.batch_size)
+    else:
+        name = name + 'Distributed_'
+        name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha) + '_bs=' + str(args.batch_size)
+    print(name)
+    writer = SummaryWriter('logs/CIFFAR10/' + name)
+    
     print('==> Building model..')
     time_buildmodel_start = time.time()
     net = vgg_new.VGG('VGG16', args.dataset, args.original, args.alpha)
@@ -277,15 +286,7 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    name = 'VGG_noSplit_'
-    if args.original:
-        name = name + 'Original_' + args.dataset + '_lr=' + str(args.lr) + '_bs=' + str(args.batch_size)
-    else:
-        name = name + 'Distributed_'
-        name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha) + '_bs=' + str(args.batch_size)
-    print(name)
-
-    writer = SummaryWriter('logs/Caltech256/' + name)
+    
     train_loader, test_loader = load_data()
     print('==> Training..')
     for epoch in range(start_epoch, start_epoch + args.epoch):
