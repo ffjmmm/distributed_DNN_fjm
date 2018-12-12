@@ -287,11 +287,11 @@ class Quant_ReLU(nn.Module):
         # print(mask[0,0,:,:])
         x = x * mask
         xx = x > 0
-        num_total = torch.sum(xx).numpy()
+        num_total = torch.sum(xx).cpu().numpy()
         xx1 = x > self.lower_bound
         xx2 = x < self.upper_bound
         xx = xx1 * xx2
-        num_remain = torch.sum(xx).numpy()
+        num_remain = torch.sum(xx).cpu().numpy()
         print("Quant_ReLU rate : ", num_remain / num_total)
         r1 = F.hardtanh(x, self.lower_bound, self.upper_bound) - self.lower_bound
         # print(float(r1[r1>0].shape[0])/r1.view(-1).shape[0])
