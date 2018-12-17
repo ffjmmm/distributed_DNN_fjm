@@ -155,11 +155,11 @@ def load_data():
         ])
         
         if args.dataset == 'Caltech101':
-            train_set = MyDataset(txt='./dataset-train-101.txt', transform=train_transform)
-            test_set = MyDataset(txt='./dataset-test-101.txt', transform=test_transform)
+            train_set = MyDataset(txt='./data/dataset-train-101.txt', transform=train_transform)
+            test_set = MyDataset(txt='./data/dataset-test-101.txt', transform=test_transform)
         else:
-            train_set = MyDataset(txt='./dataset-train.txt', transform=train_transform)
-            test_set = MyDataset(txt='./dataset-test.txt', transform=test_transform)
+            train_set = MyDataset(txt='./data/dataset-train.txt', transform=train_transform)
+            test_set = MyDataset(txt='./data/dataset-test.txt', transform=test_transform)
         # train_set = torchvision.datasets.ImageFolder('./data/256_ObjectCategories/' + 'train', train_transform)
         # test_set = torchvision.datasets.ImageFolder('./data/256_ObjectCategories/' + 'test', test_transform)
         train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=32)

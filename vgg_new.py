@@ -75,20 +75,19 @@ class lossy_Conv2d_new(nn.Module):
                     mask = markov_rand(xx.shape, self.p11, self.p22)
                     xx = xx * mask.cuda()
                     
-                    # xx = F.dropout(xx, p=self.alpha, training=True) * (1 - self.alpha)
+                    # xx = F.dropout(xx, p=0.3, training=True) * (1 - 0.3)
                     xx[:, :, 1: 1 + l_i, 1: 1 + l_j] = x[:, :, i * l_i: (i + 1) * l_i, j * l_j: (j + 1) * l_j]
-                    # print(i, j, x_s, x_e, y_s, y_e, xx.shape)
                     dummy.append(xx.cuda())
                 x_split.append(dummy)
                 
             return x_split
         
-        time1 = time.time()
+        # time1 = time.time()
         x_split = split_dropout(x, self.pieces)
-        time2 = time.time()
-        print("Lossy Conv Split time = ", time2 - time1)
+        # time2 = time.time()
+        # print("Lossy Conv Split time = ", time2 - time1)
         
-        time1 = time.time()
+        # time1 = time.time()
         r = []
         for i in range(self.pieces[0]):
             dummy = []
@@ -98,8 +97,8 @@ class lossy_Conv2d_new(nn.Module):
             dummy_cat = torch.cat((dummy[0: self.pieces[1]]), 3)
             r.append(dummy_cat)    
         r = torch.cat((r[0: self.pieces[0]]), 2)
-        time2 = time.time()
-        print("Lossy Conv combine time = ", time2 - time1)
+        # time2 = time.time()
+        # print("Lossy Conv combine time = ", time2 - time1)
         return r.cuda()
 
 
@@ -221,16 +220,19 @@ class VGG(nn.Module):
 
         # this is the end of the split
         # for feature 3, we have the loss transmission
-        time1 = time.time()
+        # time1 = time.time()
         out = self.features3(out)
         out = self.features4(out)
-        time2 = time.time()
-        print("Feature 3 & 4 time = ", time2 - time1)
+        # time2 = time.time()
+        # print("Feature 3 & 4 time = ", time2 - time1)
         
         out = self.features5(out)
         
         out = out.view(out.size(0), -1)
+        time1 = time.time()
         out = self.classifier(out)
+        time2 = time.time()
+        print("Linear time = ", time2 - time1)
         return out
 
     def _make_layers(self, cfg, in_channels, relu_change=0):
@@ -261,7 +263,7 @@ class VGG(nn.Module):
 
 
 def test():
-    net = VGG('VGG16', 'Caltech256', False)
+    net = VGG('VGG16', 'Caltech256', False, lossyLinear=True)
     net = net.to('cuda')
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True

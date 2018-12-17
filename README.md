@@ -6,16 +6,10 @@
 
 3. Use ```python3 main.py``` to run. Use ```python3 main.py --help``` to see some parameters.
 
-4. Results
+4. New way to mimic the edge pixels loss. But it really costs **Too** much time.
 
-	+ VGG16 & CIFFAR10 & 200 epoches
-	![](results/VGG16_CIFFAR10.png)
-		+ **no_split** means no split in feature 1 and feature 2 in VGG16.
-		+ **alpha** is the probability in dropout, which I use to mimics the loss of the edge pixels.
-
-	+ VGG16 & Caltech256 & 200 epoches
-
-		Not finish........
-	
-	
+    * Use markov_rand.
+        
+    * Use dropout.
+        
 	

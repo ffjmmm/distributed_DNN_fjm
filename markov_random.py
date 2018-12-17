@@ -7,11 +7,11 @@ def markov_rand(dim, p11 = 0.99, p22 = 0.03):
     p21 = 1- p22
     state = 0
     filter_num = torch.ones((dim[0],4))
-    # filter_num = filter_num.cuda()
+    filter_num = filter_num.cuda()
     mask = torch.ones(dim)
-    # mask = mask.cuda()
+    mask = mask.cuda()
     trans_prob = torch.rand((dim[0],4))
-    # trans_prob = trans_prob.cuda()
+    trans_prob = trans_prob.cuda()
     for i in range(4):
         for j in range(dim[0]):
             if state == 0:
