@@ -245,7 +245,7 @@ class VGG(nn.Module):
     def forward(self, x):
         # split x
         # print("input x: ", x.shape)
-        
+        '''
         out = self.features1(x)
         out = self.features2(out)
         '''
@@ -269,7 +269,7 @@ class VGG(nn.Module):
         out.cuda()
         # time2 = time.time()
         # print("Feature1 & 2 time = ", time2 - time1)
-        '''
+        
         '''
         (x1, x2) = torch.chunk(x, 2, 2)
         (x11, x12) = torch.chunk(x1, 2, 3)
