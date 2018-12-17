@@ -32,6 +32,7 @@ parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='weight decay')
 parser.add_argument('--epoch', default=200, type=int, help='training epoch')
 parser.add_argument('--alpha', default=0.4, type=float, help='edge pixels loss')
+parser.add_argument('--pieces', default=2, type=int, help='pieces to split')
 args = parser.parse_args()
 
 
@@ -39,7 +40,7 @@ args = parser.parse_args()
 def load_data():
     print('==> Preparing data..')
     time_data_start = time.time()
-    if args.dataset != 'Caltech256':
+    if args.dataset == 'CIFFAR10':
         transform_train = transforms.Compose([
            transforms.RandomCrop(32, padding=4),
            transforms.RandomHorizontalFlip(),
@@ -59,8 +60,7 @@ def load_data():
         test_loader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=2)
 
         classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-
-    else:
+    if args.dataset == 'Caltech101' or args.dataset == 'Caltech256':
         def default_loader(path):
             return Image.open(path).convert('RGB')
 
@@ -150,9 +150,13 @@ def load_data():
                 std=[0.229, 0.224, 0.225]
             ),
         ])
-
-        train_set = MyDataset(txt='./dataset-train.txt', transform=train_transform)
-        test_set = MyDataset(txt='./dataset-test.txt', transform=test_transform)
+        
+        if args.dataset == 'Caltech101':
+            train_set = MyDataset(txt='./dataset-train-101.txt', transform=train_transform)
+            test_set = MyDataset(txt='./dataset-test-101.txt', transform=test_transform)
+        else:
+            train_set = MyDataset(txt='./dataset-train.txt', transform=train_transform)
+            test_set = MyDataset(txt='./dataset-test.txt', transform=test_transform)
         # train_set = torchvision.datasets.ImageFolder('./data/256_ObjectCategories/' + 'train', train_transform)
         # test_set = torchvision.datasets.ImageFolder('./data/256_ObjectCategories/' + 'test', test_transform)
         train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=32)
@@ -177,9 +181,8 @@ def train(net, device, optimizer, criterion, epoch, train_loader):
         # data_time = time2 - time1
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
-        vgg_new.init_array()
+        # vgg_new.init_array()
         outputs = net(inputs)
-        # vgg_new.print_array()
         
         loss = criterion(outputs, targets)
         loss.backward()
@@ -210,10 +213,10 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(test_loader):
             inputs, targets = inputs.to(device), targets.to(device)
-            vgg_new.init_array()
+            # vgg_new.init_array()
             outputs = net(inputs)
-            res = vgg_new.get_array()
-            Quant_ReLU_rate = Quant_ReLU_rate + res
+            # res = vgg_new.get_array()
+            # Quant_ReLU_rate = Quant_ReLU_rate + res
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()
@@ -225,9 +228,11 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     acc = 100. * correct / total
     print("Epoch %d finish, test acc : %f, best add : %f" % (epoch, acc, best_acc))
     writer.add_scalar('Acc', acc, epoch)
+    writer.add_scalar('Loss', test_loss, epoch)
+    '''
     for i in range(6):
         writer.add_scalar('Quant_ReLU_Rate_' + str(i + 1), Quant_ReLU_rate[i][0] / 11., epoch)
-
+    '''
     if epoch % 30 == 0:
         print('Saving..')
         state = {
@@ -261,7 +266,7 @@ def main():
 
     print('==> Building model..')
     time_buildmodel_start = time.time()
-    net = vgg_new.VGG('VGG16', args.dataset, args.original, args.alpha)
+    net = vgg_new.VGG('VGG16', args.dataset, args.original, args.alpha, (args.pieces, args.pieces), (args.pieces, args.pieces))
     time_buildmodel_end = time.time()
 
     net = net.to(device)
@@ -283,14 +288,14 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    name = 'VGG_Rate_'
+    name = 'VGG_noSplit_'
     if args.original:
-        name = name + 'Original_' + args.dataset + '_lr=' + str(args.lr) + '_bs=' + str(args.batch_size)
+        name = name + 'Original_' + args.dataset + '_lr=' + str(args.lr) + '_bs=' + str(args.batch_size) + '_pieces=' + str((args.pieces, args.pieces))
     else:
         name = name + 'Distributed_'
-        name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha) + '_bs=' + str(args.batch_size)
+        name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha) + '_bs=' + str(args.batch_size) + '_pieces=' + str((args.pieces, args.pieces))
     print(name)
-    writer = SummaryWriter('logs/Caltech256/' + name)
+    writer = SummaryWriter('logs/' + args.dataset + '/' + name)
     train_loader, test_loader = load_data()
     print('==> Training..')
     for epoch in range(start_epoch, start_epoch + args.epoch):

@@ -2,18 +2,18 @@ import os
 from PIL import Image
 import shutil
 
-data_path = "./data/256_ObjectCategories"
+data_path = "./data/101_ObjectCategories"
 
 dirs = os.listdir(data_path)
 dirs.sort()
 
-with open(r'label.txt', 'w', encoding='utf-8') as f:
+with open(r'label_101.txt', 'w', encoding='utf-8') as f:
 	for i in dirs:
 		f.write(i)
 		f.write('\n')
 
 it = 0
-Matrix = [[] for x in range(257)]
+Matrix = [[] for x in range(102)]
 for d in dirs:
 	for _, _, filename in os.walk(os.path.join(data_path, d)):
 		for i in filename:
@@ -31,7 +31,7 @@ for i in range(len(Matrix)):
 		shutil.move(Matrix[i][j], fullpath)
 '''
 
-with open(r'dataset-test.txt', 'w', encoding='utf-8') as f:
+with open(r'dataset-test-101.txt', 'w', encoding='utf-8') as f:
 	for i in range(len(Matrix)):
 		for j in range(10):
 			f.write(Matrix[i][j])
@@ -40,7 +40,7 @@ with open(r'dataset-test.txt', 'w', encoding='utf-8') as f:
 			f.write(str(i))
 			f.write('\n')
 
-with open(r'dataset-train.txt', 'w', encoding='utf-8') as f:
+with open(r'dataset-train-101.txt', 'w', encoding='utf-8') as f:
 	for i in range(len(Matrix)):
 		for j in range(10, len(Matrix[i])):
 			f.write(Matrix[i][j])
