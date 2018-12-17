@@ -9,7 +9,20 @@
 4. New way to mimic the edge pixels loss. But it really costs **Too** much time.
 
     * Use markov_rand.
-        
+    
+    ![](img/markov_rand.png)
+    
     * Use dropout.
-        
+    
+    ![](img/dropout.png)
+    
+5. Lossy Linear also spends much more time than original linear.
+
+	* Lossy Linear.
+	
+	![](img/lossy_linear.png)
+	
+	* Original Linear.
+
+	![](img/no_lossy_linear.png)
 	
