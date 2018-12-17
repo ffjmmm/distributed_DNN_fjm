@@ -26,7 +26,7 @@ def print_array():
 
 
 def get_array():
-    res = Quant_ReLU_rate.sum(axis=1)
+    res = Quant_ReLU_rate.sum(axis=1) / 8.
     return res
 
 
