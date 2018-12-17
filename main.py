@@ -31,8 +31,11 @@ parser.add_argument('--print_freq', default=20, type=int, help='print frequency'
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='weight decay')
 parser.add_argument('--epoch', default=200, type=int, help='training epoch')
-parser.add_argument('--alpha', default=0.4, type=float, help='edge pixels loss')
+parser.add_argument('--p11', default=0.99, type=float, help='p11')
+parser.add_argument('--p22', default=0.03, type=float, help='p22')
 parser.add_argument('--pieces', default=2, type=int, help='pieces to split')
+parser.add_argument('--lossyLinear', action='store_true', help='use Lossy Linear')
+parser.add_argument('--loss_prob', default=0.1, type=float, help='loss prob in Lossy Linear')
 args = parser.parse_args()
 
 
@@ -233,17 +236,7 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     for i in range(6):
         writer.add_scalar('Quant_ReLU_Rate_' + str(i + 1), Quant_ReLU_rate[i][0] / 11., epoch)
     '''
-    if epoch % 30 == 0:
-        print('Saving..')
-        state = {
-            'net': net.state_dict(),
-            'acc': acc,
-            'epoch': epoch,
-        }
-        if not os.path.isdir('checkpoint'):
-            os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/ckpt_' + args.dataset + '.t7')
-
+    
     if acc > best_acc:
         print('Saving..')
         state = {
@@ -266,7 +259,7 @@ def main():
 
     print('==> Building model..')
     time_buildmodel_start = time.time()
-    net = vgg_new.VGG('VGG16', args.dataset, args.original, args.alpha, (args.pieces, args.pieces), (args.pieces, args.pieces))
+    net = vgg_new.VGG('VGG16', args.dataset, args.original, args.p11, args.p22, args.lossyLinear, args.loss_prob, (args.pieces, args.pieces), (args.pieces, args.pieces))
     time_buildmodel_end = time.time()
 
     net = net.to(device)
@@ -290,12 +283,15 @@ def main():
 
     name = 'VGG_'
     if args.original:
-        name = name + 'Original_' + args.dataset + '_lr=' + str(args.lr) + '_bs=' + str(args.batch_size) + '_pieces=' + str((args.pieces, args.pieces))
+        name = name + 'Original_lr=' + str(args.lr) + '_bs=' + str(args.batch_size)
     else:
-        name = name + 'Distributed_'
-        name = name + args.dataset + '_lr=' + str(args.lr) + '_alpha=' + str(args.alpha) + '_bs=' + str(args.batch_size) + '_pieces=' + str((args.pieces, args.pieces))
+        name = name + 'Distributed_lr=' + str(args.lr) + '_p11=' + str(args.p11) + '_p22=' + str(args.p22) + '_bs=' + str(args.batch_size) + '_' + str(args.pieces) + 'x' + str(args.pieces)
+        if args.lossyLinear:
+            name = name + '_lossyLinear=' + args.loss_prob
+        else:
+            name = name + '_noLossyLinear'
     print(name)
-    writer = SummaryWriter('logs/' + args.dataset + '/' + name)
+    writer = SummaryWriter('logs/new_' + args.dataset + '/' + name)
     train_loader, test_loader = load_data()
     print('==> Training..')
     for epoch in range(start_epoch, start_epoch + args.epoch):

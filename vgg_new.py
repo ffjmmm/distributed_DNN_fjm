@@ -7,7 +7,8 @@ import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 import random
 import numpy as np
-
+from input_activation import Lossy_Linear
+from markov_random import markov_rand
 import time
 
 
@@ -19,14 +20,8 @@ def init_array():
     global Quant_ReLU_rate
     Quant_ReLU_rate = np.zeros((6, num_gpu), dtype=float)
 
-
-def print_array():
-    res = Quant_ReLU_rate.sum(axis=1)
-    print(res)
-
-
 def get_array():
-    res = Quant_ReLU_rate.sum(axis=1) / 8.
+    res = Quant_ReLU_rate.mean(axis=1) / num_gpu
     return res
 
 
@@ -45,12 +40,12 @@ cfg = {
 
 # new lossy_Conv2d without mask matrix
 class lossy_Conv2d_new(nn.Module):
-    def __init__(self, in_channels, out_channels, alpha, kernel_size=3, padding=0, num_pieces=(2, 2)):
+    def __init__(self, in_channels, out_channels, p11 = 0.99, p22 = 0.03, kernel_size=3, padding=0, num_pieces=(2, 2)):
         super(lossy_Conv2d_new, self).__init__()
-
         # for each pieces, define a new conv operation
         self.pieces = num_pieces
-        self.alpha = alpha
+        self.p11 = p11
+        self.p22 = p22
         self.b1 = nn.Sequential(
             # use the parameters instead of numbers
             nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=0)
@@ -58,60 +53,6 @@ class lossy_Conv2d_new(nn.Module):
 
     def forward(self, x):
         # print("x shape : ", x.shape)
-
-        def split_rand(x, pieces=(2, 2), index_i=0, index_j=0):
-            dim = x.shape
-            l_i = dim[2] // pieces[0]
-            l_j = dim[3] // pieces[1]
-
-            # [i_s:i_e, j_s:j_e]对应之前b_sub中间部分=1
-            i_s = index_i * dim[2] // pieces[0]
-            i_e = i_s + l_i
-            j_s = index_j * dim[3] // pieces[1]
-            j_e = j_s + l_j
-
-            x_split = torch.zeros((dim[0], dim[1], l_i + 2, l_j + 2))
-            x_split = x_split.cuda()
-            x_split[:, :, 1: l_i + 1, 1: l_j + 1] = x[:, :, i_s: i_e, j_s: j_e]
-
-            # generate random number to simulate the edge pixel loss
-            alpha = 0.5
-            if i_s > 0:
-                rand = torch.FloatTensor(dim[0], dim[1], 1, l_j).uniform_() > alpha
-                rand = rand.float()
-                x_split[:, :, 0, 1: l_j + 1] = x[:, :, i_s - 1, j_s: j_e] * rand[:, :, 0, :].cuda()
-            if i_e < dim[2]:
-                rand = torch.FloatTensor(dim[0], dim[1], 1, l_j).uniform_() > alpha
-                rand = rand.float()
-                x_split[:, :, l_i + 1, 1: l_j + 1] = x[:, :, i_e, j_s: j_e] * rand[:, :, 0, :].cuda()
-            if j_s > 0:
-                rand = torch.FloatTensor(dim[0], dim[1], l_i, 1).uniform_() > alpha
-                rand = rand.float()
-                x_split[:, :, 1: l_i + 1, 0] = x[:, :, i_s: i_e, j_s - 1] * rand[:, :, :, 0].cuda()
-            if j_e < dim[3]:
-                rand = torch.FloatTensor(dim[0], dim[1], l_i, 1).uniform_() > alpha
-                rand = rand.float()
-                x_split[:, :, 1: l_i + 1, l_j + 1] = x[:, :, i_s: i_e, j_e] * rand[:, :, :, 0].cuda()
-
-            # Four corner
-            if i_s > 0 and j_s > 0:
-                rand = torch.FloatTensor(dim[0], dim[1], 1, 1).uniform_() > alpha
-                rand = rand.float()
-                x_split[:, :, 0, 0] = x[:, :, i_s - 1, j_s - 1] * rand[:, :, 0, 0].cuda()
-            if i_e < dim[2] and j_s > 0:
-                rand = torch.FloatTensor(dim[0], dim[1], 1, 1).uniform_() > alpha
-                rand = rand.float()
-                x_split[:, :, l_i + 1, 0] = x[:, :, i_e, j_s - 1] * rand[:, :, 0, 0].cuda()
-            if i_s > 0 and j_e < dim[3]:
-                rand = torch.FloatTensor(dim[0], dim[1], 1, 1).uniform_() > alpha
-                rand = rand.float()
-                x_split[:, :, 0, l_j + 1] = x[:, :, i_s - 1, j_e] * rand[:, :, 0, 0].cuda()
-            if i_e < dim[2] and j_e < dim[3]:
-                rand = torch.FloatTensor(dim[0], dim[1], 1, 1).uniform_() > alpha
-                rand = rand.float()
-                x_split[:, :, l_i + 1, l_j + 1] = x[:, :, i_e, j_e] * rand[:, :, 0, 0].cuda()
-
-            return x_split.cuda()
         
         def split_dropout(x, pieces):
             
@@ -131,7 +72,10 @@ class lossy_Conv2d_new(nn.Module):
                     xx = F.pad(xx, (int(j == 0), int(j == pieces[1] - 1), int(i == 0), int(i == pieces[0] - 1), 0, 0, 0, 0))
                     xx = xx.cuda()
                     
-                    xx = F.dropout(xx, p=self.alpha, training=True) * (1 - self.alpha)
+                    mask = markov_rand(xx.shape, self.p11, self.p22)
+                    xx = xx * mask.cuda()
+                    
+                    # xx = F.dropout(xx, p=self.alpha, training=True) * (1 - self.alpha)
                     xx[:, :, 1: 1 + l_i, 1: 1 + l_j] = x[:, :, i * l_i: (i + 1) * l_i, j * l_j: (j + 1) * l_j]
                     # print(i, j, x_s, x_e, y_s, y_e, xx.shape)
                     dummy.append(xx.cuda())
@@ -139,19 +83,12 @@ class lossy_Conv2d_new(nn.Module):
                 
             return x_split
         
-        # time1 = time.time()
+        time1 = time.time()
         x_split = split_dropout(x, self.pieces)
-        # time2 = time.time()
-        # print("Lossy Conv Split time = ", time2 - time1)
+        time2 = time.time()
+        print("Lossy Conv Split time = ", time2 - time1)
         
-        '''
-        x11 = split_rand(x, self.pieces, 0, 0)
-        x12 = split_rand(x, self.pieces, 0, 1)
-        x21 = split_rand(x, self.pieces, 1, 0)
-        x22 = split_rand(x, self.pieces, 1, 1)
-        '''
-        
-        # time1 = time.time()
+        time1 = time.time()
         r = []
         for i in range(self.pieces[0]):
             dummy = []
@@ -161,8 +98,8 @@ class lossy_Conv2d_new(nn.Module):
             dummy_cat = torch.cat((dummy[0: self.pieces[1]]), 3)
             r.append(dummy_cat)    
         r = torch.cat((r[0: self.pieces[0]]), 2)
-        # time2 = time.time()
-        # print("Lossy Conv combine time = ", time2 - time1)
+        time2 = time.time()
+        print("Lossy Conv combine time = ", time2 - time1)
         return r.cuda()
 
 
@@ -224,79 +161,71 @@ class Quant_ReLU(nn.Module):
 
 
 class VGG(nn.Module):
-    def __init__(self, vgg_name, dataset, original, alpha, pieces=(2, 2), f12_pieces=(2, 2)):
+    def __init__(self, vgg_name, dataset, original, p11=0.99, p22=0.03, lossyLinear=False, loss_prob=0.1, pieces=(2, 2), f12_pieces=(2, 2)):
         super(VGG, self).__init__()
         # only accept VGG16
         self.f12_pieces = f12_pieces
         self.features1 = self._make_layers(cfg['VGG16_1'], 3)
         self.features2 = self._make_layers(cfg['VGG16_2'], 64)
+        self.original = original
         if original:
             self.features3 = self._make_layers(cfg['VGG16_3'], 128)
             self.features4 = self._make_layers(cfg['VGG16_4'], 256)
         else :
-            self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128, alpha, pieces)
-            self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256, alpha, pieces)
+            self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128, p11, p22, pieces)
+            self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256, p11, p22, pieces)
         self.features5 = self._make_layers(cfg['VGG16_5'], 512)
         if dataset == 'CIFFAR10':
-            self.classifier = nn.Linear(512, 10)
-        else:
-            self.classifier = nn.Linear(25088, 257)
+            if lossyLinear:
+                self.classifier = Lossy_Linear(512, 10, loss_prob=loss_prob)
+            else:
+                self.classifier = nn.Linear(512, 10)
+        elif dataset == 'Caltech256':
+            if lossyLinear:
+                self.classifier = Lossy_Linear(25088, 257, loss_prob=loss_prob)
+            else:
+                self.classifier = nn.Linear(25088, 257)
+        elif dataset == 'Caltech101':
+            if lossyLinear:
+                self.classifier = Lossy_Linear(25088, 102, loss_prob=loss_prob)
+            else:
+                self.classifier = nn.Linear(25088, 102)
 
     def forward(self, x):
         # split x
         # print("input x: ", x.shape)
-        '''
-        out = self.features1(x)
-        out = self.features2(out)
-        '''
-        x_split = []
-        xx = torch.chunk(x, self.f12_pieces[0], 2)
-        for i in range(self.f12_pieces[0]):
-            xxx = torch.chunk(xx[i], self.f12_pieces[1], 3)
-            x_split.append(xxx)
+        if self.original:
+            out = self.features1(x)
+            out = self.features2(out)
+        else:
+            x_split = []
+            xx = torch.chunk(x, self.f12_pieces[0], 2)
+            for i in range(self.f12_pieces[0]):
+                xxx = torch.chunk(xx[i], self.f12_pieces[1], 3)
+                x_split.append(xxx)
         
-        # time1 = time.time()
-        out = []
-        for i in range(self.f12_pieces[0]):
-            dummy = []
-            for j in range(self.f12_pieces[1]):
-                rr = self.features1(x_split[i][j].cuda())
-                rr = self.features2(rr.cuda())
-                dummy.append(rr)
-            dummy_cat = torch.cat((dummy[0: self.f12_pieces[1]]), 3)
-            out.append(dummy_cat)    
-        out = torch.cat((out[0: self.f12_pieces[0]]), 2)
-        out.cuda()
+            # time1 = time.time()
+            out = []
+            for i in range(self.f12_pieces[0]):
+                dummy = []
+                for j in range(self.f12_pieces[1]):
+                    rr = self.features1(x_split[i][j].cuda())
+                    rr = self.features2(rr.cuda())
+                    dummy.append(rr)
+                dummy_cat = torch.cat((dummy[0: self.f12_pieces[1]]), 3)
+                out.append(dummy_cat)    
+            out = torch.cat((out[0: self.f12_pieces[0]]), 2)
+            out.cuda()
         # time2 = time.time()
         # print("Feature1 & 2 time = ", time2 - time1)
-        
-        '''
-        (x1, x2) = torch.chunk(x, 2, 2)
-        (x11, x12) = torch.chunk(x1, 2, 3)
-        (x21, x22) = torch.chunk(x2, 2, 3)
-        
-        # split the input channel x
-        out11 = self.features1(x11)
-        out11 = self.features2(out11)
-        out12 = self.features1(x12)
-        out12 = self.features2(out12)
-        out21 = self.features1(x21)
-        out21 = self.features2(out21)
-        out22 = self.features1(x22)
-        out22 = self.features2(out22)
-        out1 = torch.cat((out11, out12), 3)
-        out2 = torch.cat((out21, out22), 3)
-        out = torch.cat((out1, out2), 2)
-        '''
+
         # this is the end of the split
         # for feature 3, we have the loss transmission
-        # mask = mask_matrix((out.shape[3],out.shape[2],out.shape[1],out.shape[0]),(2,2),0.5)
-        # one_mask = one_mask_matrix((out.shape[3],out.shape[2],out.shape[1],out.shape[0]),(2,2),0.5)
-        # time1 = time.time()
+        time1 = time.time()
         out = self.features3(out)
         out = self.features4(out)
-        # time2 = time.time()
-        # print("Feature 3 & 4 time = ", time2 - time1)
+        time2 = time.time()
+        print("Feature 3 & 4 time = ", time2 - time1)
         
         out = self.features5(out)
         
@@ -317,13 +246,13 @@ class VGG(nn.Module):
         layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
         return nn.Sequential(*layers)
 
-    def _make_layers_lossy_conv(self, cfg, in_channels, alpha, pieces=(2, 2), relu_change=0):
+    def _make_layers_lossy_conv(self, cfg, in_channels, p11, p22, pieces=(2, 2), relu_change=0):
         layers = []
         for x in cfg:
             if x == 'M':
                 layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
             else:
-                layers += [lossy_Conv2d_new(in_channels, x, kernel_size=3, padding=1, alpha=alpha, num_pieces=pieces),
+                layers += [lossy_Conv2d_new(in_channels, x, kernel_size=3, p11 = p11, p22 = p22, num_pieces=pieces),
                            nn.BatchNorm2d(x, affine=False),
                            Quant_ReLU(lower_bound=.5, upper_bound=.8, num_bits=4., num_pieces=pieces)]
                 in_channels = x
@@ -332,11 +261,11 @@ class VGG(nn.Module):
 
 
 def test():
-    net = VGG('VGG16', 'Caltech256', False, 0.5, (2, 2), (2, 2))
+    net = VGG('VGG16', 'Caltech256', False)
     net = net.to('cuda')
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
-    x = torch.randn(64, 3, 224, 224)
+    x = torch.randn(256, 3, 224, 224)
     # x = torch.randn(128, 3, 32, 32)
     # init_array()
     y = net(x)
