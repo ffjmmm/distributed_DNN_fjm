@@ -1,6 +1,7 @@
 import os
 from PIL import Image
 import shutil
+import math
 
 data_path = "./data/101_ObjectCategories"
 
@@ -13,38 +14,29 @@ with open(r'./data/label_101.txt', 'w', encoding='utf-8') as f:
 		f.write('\n')
 
 it = 0
-Matrix = [[] for x in range(102)]
+Matrix = [[] for x in range(101)]
 for d in dirs:
 	for _, _, filename in os.walk(os.path.join(data_path, d)):
 		for i in filename:
 			Matrix[it].append(os.path.join(os.path.join(data_path, d), i))
 	it = it + 1
 
-'''
-for i in range(len(Matrix)):
-	for j in range(10):
-		label = Matrix[i][j].split('/')[4]
-		path = './data/256_ObjectCategories/test/' + label
-		if not os.path.exists(path):
-			os.mkdir(path)
-		fullpath = path + '/' + Matrix[i][j].split('/')[5]
-		shutil.move(Matrix[i][j], fullpath)
-'''
-
 with open(r'./data/dataset-test-101.txt', 'w', encoding='utf-8') as f:
-	for i in range(len(Matrix)):
-		for j in range(10):
-			f.write(Matrix[i][j])
+    for i in range(len(Matrix)):
+        num_test = math.floor(len(Matrix[i]) * 0.3)
+        for j in range(num_test):
+            f.write(Matrix[i][j])
 			# f.write(os.path.join(data_path, Matrix[i][j]))
-			f.write(' ')
-			f.write(str(i))
-			f.write('\n')
+            f.write(' ')
+            f.write(str(i))
+            f.write('\n')
 
 with open(r'./data/dataset-train-101.txt', 'w', encoding='utf-8') as f:
-	for i in range(len(Matrix)):
-		for j in range(10, len(Matrix[i])):
-			f.write(Matrix[i][j])
+    for i in range(len(Matrix)):
+        num_test = math.floor(len(Matrix[i]) * 0.3)
+        for j in range(num_test, len(Matrix[i])):
+            f.write(Matrix[i][j])
 			# f.write(os.path.join(data_path, Matrix[i][j]))
-			f.write(' ')
-			f.write(str(i))
-			f.write('\n')
+            f.write(' ')
+            f.write(str(i))
+            f.write('\n')

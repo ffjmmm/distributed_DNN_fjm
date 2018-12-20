@@ -13,16 +13,20 @@ import time
 
 
 num_gpu = 8
-Quant_ReLU_rate = np.zeros((6, num_gpu), dtype=float)
+nonzero_pixels_rate = np.zeros((6, num_gpu), dtype=float)
+bytes_per_packet = np.zeros((6, num_gpu), dtype=float)
 
 
 def init_array():
-    global Quant_ReLU_rate
-    Quant_ReLU_rate = np.zeros((6, num_gpu), dtype=float)
+    global nonzero_pixels_rate
+    global bytes_per_packet
+    nonzero_pixels_rate = np.zeros((6, num_gpu), dtype=float)
+    bytes_per_packet = np.zeros((6, num_gpu), dtype=float)
 
 def get_array():
-    res = Quant_ReLU_rate.mean(axis=1) / num_gpu
-    return res
+    nonzero = nonzero_pixels_rate.mean(axis=1)
+    bytes_per = bytes_per_packet.mean(axis=1)
+    return nonzero, bytes_per
 
 
 cfg = {
@@ -40,7 +44,7 @@ cfg = {
 
 # new lossy_Conv2d without mask matrix
 class lossy_Conv2d_new(nn.Module):
-    def __init__(self, in_channels, out_channels, p11 = 0.99, p22 = 0.03, kernel_size=3, padding=0, num_pieces=(2, 2)):
+    def __init__(self, in_channels, out_channels, p11 = 0.99, p22 = 0.03, kernel_size=3, padding=0, num_pieces=(2, 2), dataset=None):
         super(lossy_Conv2d_new, self).__init__()
         # for each pieces, define a new conv operation
         self.pieces = num_pieces
@@ -50,13 +54,27 @@ class lossy_Conv2d_new(nn.Module):
             # use the parameters instead of numbers
             nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=0)
         )
-
+        if dataset == 'Caltech256' or dataset == 'Caltech101':
+            s1 = 56
+            x1 = s1 // num_pieces[0] + 2
+            y1 = s1 // num_pieces[1] + 2
+            
+            s2 = 28
+            x2 = s2 // num_pieces[0] + 2
+            y2 = s2 // num_pieces[1] + 2
+            
+            self.num_56 = 500
+            self.mask_56 = markov_rand([32, self.num_56, x1, y1], p11, p22)
+            self.num_28 = 800
+            self.mask_28 = markov_rand([32, self.num_28, x2, y2], p11, p22)
+            
     def forward(self, x):
         # print("x shape : ", x.shape)
         
         def split_dropout(x, pieces):
             
             dim = x.shape
+            # print("input shape : ", dim)
             l_i = dim[2] // pieces[0]
             l_j = dim[3] // pieces[1]
             
@@ -71,8 +89,16 @@ class lossy_Conv2d_new(nn.Module):
                     xx = x[:, :, x_s: x_e, y_s: y_e]
                     xx = F.pad(xx, (int(j == 0), int(j == pieces[1] - 1), int(i == 0), int(i == pieces[0] - 1), 0, 0, 0, 0))
                     xx = xx.cuda()
-                    
-                    mask = markov_rand(xx.shape, self.p11, self.p22)
+                    # print(xx.shape)
+                    # mask = markov_rand(xx.shape, self.p11, self.p22)
+                    if dim[2] == 56:
+                        self.mask_56 = self.mask_56.cuda()
+                        offset = random.randint(0, self.num_56 - xx.shape[1] - 1)
+                        mask = self.mask_56[0: dim[0], offset: offset + xx.shape[1], :, :]
+                    else:
+                        self.mask_28 = self.mask_28.cuda()
+                        offset = random.randint(0, self.num_28 - xx.shape[1] - 1)
+                        mask = self.mask_28[0: dim[0], offset: offset + xx.shape[1], :, :]
                     xx = xx * mask.cuda()
                     
                     # xx = F.dropout(xx, p=0.3, training=True) * (1 - 0.3)
@@ -125,30 +151,25 @@ class Quant_ReLU(nn.Module):
             return mask.cuda()
 
         mask = gen_mask(x.shape, self.num_pieces)
-        # print(mask[0,0,:,:])
-        '''
-        x_mask = x * mask
-        xx = x_mask > 0
-        num_total = torch.sum(xx).cpu().numpy()
-        xx1 = x_mask > self.lower_bound
-        xx1 = xx1.cuda()
-        xx2 = x_mask < self.upper_bound
-        xx2 = xx2.cuda()
-        xx = xx1 * xx2
-        num_remain = torch.sum(xx).cpu().numpy()
+        r1 = F.hardtanh(x * mask, self.lower_bound, self.upper_bound) - self.lower_bound
+        
         flag = True
         for i in range(6):
             for j in range(num_gpu):
-                if Quant_ReLU_rate[i][j] == 0:
-                    Quant_ReLU_rate[i][j] = num_remain / num_total
+                if nonzero_pixels_rate[i][j] == 0:
+                    nonzero_pixels_rate[i][j] = float(r1[r1>0].shape[0])/(x.shape[0]*x.shape[1]*(4*x.shape[2]-4))
+                    bytes_per_packet[i][j] = float(r1[r1>0].shape[0])/(x.shape[0])*4./(8*8)
                     flag = False
                     break
             if flag == False:
                 break
         if flag == True:
             print("ERROR!!!!!!")
-        '''
-        r1 = F.hardtanh(x * mask, self.lower_bound, self.upper_bound) - self.lower_bound
+        
+        ################################################################
+        # print("Ratio of nonzero pixels:" + str(float(r1[r1>0].shape[0])/(x.shape[0]*x.shape[1]*(4*x.shape[2]-4))))
+        # print("number of bytes per packet:" + str(float(r1[r1>0].shape[0])/(x.shape[0])*4./(8*8)))
+        ################################################################
         # print(float(r1[r1>0].shape[0])/r1.view(-1).shape[0])
         # print(r1[0,0,:,:])
         # quantize the pixels on the margin
@@ -160,7 +181,7 @@ class Quant_ReLU(nn.Module):
 
 
 class VGG(nn.Module):
-    def __init__(self, vgg_name, dataset, original, p11=0.99, p22=0.03, lossyLinear=False, loss_prob=0.1, pieces=(2, 2), f12_pieces=(2, 2)):
+    def __init__(self, vgg_name, dataset, original, p11=0.99, p22=0.03, lossyLinear=False, loss_prob=0.1, pieces=(2, 2), f12_pieces=(2, 2), lower_bound=0.5, upper_bound=1.0):
         super(VGG, self).__init__()
         # only accept VGG16
         self.f12_pieces = f12_pieces
@@ -171,8 +192,8 @@ class VGG(nn.Module):
             self.features3 = self._make_layers(cfg['VGG16_3'], 128)
             self.features4 = self._make_layers(cfg['VGG16_4'], 256)
         else :
-            self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128, p11, p22, pieces)
-            self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256, p11, p22, pieces)
+            self.features3 = self._make_layers_lossy_conv(cfg['VGG16_3'], 128, p11, p22, dataset, pieces, lower_bound=lower_bound, upper_bound=upper_bound)
+            self.features4 = self._make_layers_lossy_conv(cfg['VGG16_4'], 256, p11, p22, dataset, pieces, lower_bound=lower_bound, upper_bound=upper_bound)
         self.features5 = self._make_layers(cfg['VGG16_5'], 512)
         if dataset == 'CIFFAR10':
             if lossyLinear:
@@ -186,9 +207,25 @@ class VGG(nn.Module):
                 self.classifier = nn.Linear(25088, 257)
         elif dataset == 'Caltech101':
             if lossyLinear:
-                self.classifier = Lossy_Linear(25088, 102, loss_prob=loss_prob)
+                self.classifier = nn.Sequential(
+                    Lossy_Linear(25088, 4096, loss_prob=loss_prob),
+                    nn.BatchNorm1d(4096),
+                    nn.ReLU(True),
+                    Lossy_Linear(4096, 4096, loss_prob=loss_prob),
+                    nn.BatchNorm1d(4096),
+                    nn.ReLU(True),
+                    Lossy_Linear(4096, 101, loss_prob=loss_prob)
+                )
             else:
-                self.classifier = nn.Linear(25088, 102)
+                self.classifier = nn.Sequential(
+                    nn.Linear(25088, 4096),
+                    nn.BatchNorm1d(4096),
+                    nn.ReLU(True),
+                    nn.Linear(4096, 4096),
+                    nn.BatchNorm1d(4096),
+                    nn.ReLU(True),
+                    nn.Linear(4096, 101)
+                )
 
     def forward(self, x):
         # split x
@@ -220,19 +257,19 @@ class VGG(nn.Module):
 
         # this is the end of the split
         # for feature 3, we have the loss transmission
-        # time1 = time.time()
+        time1 = time.time()
         out = self.features3(out)
         out = self.features4(out)
-        # time2 = time.time()
+        time2 = time.time()
         # print("Feature 3 & 4 time = ", time2 - time1)
         
         out = self.features5(out)
         
         out = out.view(out.size(0), -1)
-        time1 = time.time()
+        # time1 = time.time()
         out = self.classifier(out)
-        time2 = time.time()
-        print("Linear time = ", time2 - time1)
+        # time2 = time.time()
+        # print("Linear time = ", time2 - time1)
         return out
 
     def _make_layers(self, cfg, in_channels, relu_change=0):
@@ -248,15 +285,15 @@ class VGG(nn.Module):
         layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
         return nn.Sequential(*layers)
 
-    def _make_layers_lossy_conv(self, cfg, in_channels, p11, p22, pieces=(2, 2), relu_change=0):
+    def _make_layers_lossy_conv(self, cfg, in_channels, p11, p22, dataset, pieces=(2, 2), relu_change=0, lower_bound=0.5, upper_bound=1.0):
         layers = []
         for x in cfg:
             if x == 'M':
                 layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
             else:
-                layers += [lossy_Conv2d_new(in_channels, x, kernel_size=3, p11 = p11, p22 = p22, num_pieces=pieces),
+                layers += [lossy_Conv2d_new(in_channels, x, kernel_size=3, p11 = p11, p22 = p22, num_pieces=pieces, dataset=dataset),
                            nn.BatchNorm2d(x, affine=False),
-                           Quant_ReLU(lower_bound=.5, upper_bound=.8, num_bits=4., num_pieces=pieces)]
+                           Quant_ReLU(lower_bound=lower_bound, upper_bound=upper_bound, num_bits=4., num_pieces=pieces)]
                 in_channels = x
         layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
         return nn.Sequential(*layers)

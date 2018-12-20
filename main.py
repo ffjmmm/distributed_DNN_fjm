@@ -36,6 +36,8 @@ parser.add_argument('--p22', default=0.03, type=float, help='p22')
 parser.add_argument('--pieces', default=2, type=int, help='pieces to split')
 parser.add_argument('--lossyLinear', action='store_true', help='use Lossy Linear')
 parser.add_argument('--loss_prob', default=0.1, type=float, help='loss prob in Lossy Linear')
+parser.add_argument('--lower_bound', default=0.5, type=float, help='lower bound in Quant ReLU')
+parser.add_argument('--upper_bound', default=1.0, type=float, help='upper bound in Quant ReLU')
 args = parser.parse_args()
 
 
@@ -184,7 +186,7 @@ def train(net, device, optimizer, criterion, epoch, train_loader):
         # data_time = time2 - time1
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
-        # vgg_new.init_array()
+        vgg_new.init_array()
         outputs = net(inputs)
         
         loss = criterion(outputs, targets)
@@ -212,14 +214,16 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     test_loss = 0
     correct = 0
     total = 0
-    Quant_ReLU_rate = np.zeros((6, 1), dtype=float)
+    nonzero_rate = np.zeros((6, 1), dtype=float)
+    bytes_per_packet = np.zeros((6, 1), dtype=float)
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(test_loader):
             inputs, targets = inputs.to(device), targets.to(device)
-            # vgg_new.init_array()
+            vgg_new.init_array()
             outputs = net(inputs)
-            # res = vgg_new.get_array()
-            # Quant_ReLU_rate = Quant_ReLU_rate + res
+            nonzero, bytes_per = vgg_new.get_array()
+            nonzero_rate = nonzero_rate + nonzero
+            bytes_per_packet = bytes_per_packet + bytes_per
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()
@@ -232,11 +236,11 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     print("Epoch %d finish, test acc : %f, best add : %f" % (epoch, acc, best_acc))
     writer.add_scalar('Acc', acc, epoch)
     writer.add_scalar('Loss', test_loss, epoch)
-    '''
+
     for i in range(6):
-        writer.add_scalar('Quant_ReLU_Rate_' + str(i + 1), Quant_ReLU_rate[i][0] / 11., epoch)
-    '''
-    
+        writer.add_scalar('Nonzero_Rate_' + str(i + 1), nonzero_rate[i][0] / 10., epoch)
+        writer.add_scalar('Bytes_Per_Packet_' + str(i + 1), bytes_per_packet[i][0] / 10., epoch)
+
     if acc > best_acc:
         print('Saving..')
         state = {
@@ -259,7 +263,7 @@ def main():
 
     print('==> Building model..')
     time_buildmodel_start = time.time()
-    net = vgg_new.VGG('VGG16', args.dataset, args.original, args.p11, args.p22, args.lossyLinear, args.loss_prob, (args.pieces, args.pieces), (args.pieces, args.pieces))
+    net = vgg_new.VGG('VGG16', args.dataset, args.original, args.p11, args.p22, args.lossyLinear, args.loss_prob, (args.pieces, args.pieces), (args.pieces, args.pieces), args.lower_bound, args.upper_bound)
     time_buildmodel_end = time.time()
 
     net = net.to(device)
@@ -285,7 +289,7 @@ def main():
     if args.original:
         name = name + 'Original_lr=' + str(args.lr) + '_bs=' + str(args.batch_size)
     else:
-        name = name + 'Distributed_lr=' + str(args.lr) + '_p11=' + str(args.p11) + '_p22=' + str(args.p22) + '_bs=' + str(args.batch_size) + '_' + str(args.pieces) + 'x' + str(args.pieces)
+        name = name + 'Distributed_lr=' + str(args.lr) + '_Conv=(' + str(args.p11) + ',' + str(args.p22) + ')_ReLU=(' + str(args.lower_bound) + ',' + str(args.upper_bound) + ')_bs=' + str(args.batch_size) + '_' + str(args.pieces) + 'x' + str(args.pieces)
         if args.lossyLinear:
             name = name + '_lossyLinear=' + args.loss_prob
         else:
