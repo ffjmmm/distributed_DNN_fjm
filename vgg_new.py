@@ -159,6 +159,7 @@ class Quant_ReLU(nn.Module):
                 if nonzero_pixels_rate[i][j] == 0:
                     nonzero_pixels_rate[i][j] = float(r1[r1>0].shape[0])/(x.shape[0]*x.shape[1]*(4*x.shape[2]-4))
                     bytes_per_packet[i][j] = float(r1[r1>0].shape[0])/(x.shape[0])*4./(8*8)
+                    print(i, j, nonzero_pixels_rate[i][j], bytes_per_packet[i][j])
                     flag = False
                     break
             if flag == False:
@@ -311,4 +312,4 @@ def test():
     # print_array()
     
 
-# test()
+test()
