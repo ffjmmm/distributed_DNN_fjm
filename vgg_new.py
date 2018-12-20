@@ -12,7 +12,7 @@ from markov_random import markov_rand
 import time
 
 
-num_gpu = 8
+num_gpu = 2
 nonzero_pixels_rate = np.zeros((6, num_gpu), dtype=float)
 bytes_per_packet = np.zeros((6, num_gpu), dtype=float)
 
