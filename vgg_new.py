@@ -12,17 +12,21 @@ from markov_random import markov_rand
 import time
 
 
-num_gpu = 2
+num_gpu = 8
 nonzero_pixels_rate = np.zeros((6, num_gpu), dtype=float)
 bytes_per_packet = np.zeros((6, num_gpu), dtype=float)
+print_flag = False
 
+def set_print_flag(flag):
+    global print_flag
+    print_flag = flag
 
 def init_array():
     global nonzero_pixels_rate
     global bytes_per_packet
     nonzero_pixels_rate = np.zeros((6, num_gpu), dtype=float)
     bytes_per_packet = np.zeros((6, num_gpu), dtype=float)
-
+    
 def get_array():
     nonzero = nonzero_pixels_rate.mean(axis=1)
     bytes_per = bytes_per_packet.mean(axis=1)
@@ -139,7 +143,6 @@ class Quant_ReLU(nn.Module):
         self.num_pieces = num_pieces
 
     def forward(self, x):
-        # print(x.shape)
         def gen_mask(dim=(16, 16, 4, 4), pieces=(2, 2)):
             mask = torch.zeros(dim[2], dim[3])
             for i in range(1, pieces[0]):
@@ -153,23 +156,30 @@ class Quant_ReLU(nn.Module):
         mask = gen_mask(x.shape, self.num_pieces)
         r1 = F.hardtanh(x * mask, self.lower_bound, self.upper_bound) - self.lower_bound
         
-        flag = True
-        for i in range(6):
-            for j in range(num_gpu):
-                if nonzero_pixels_rate[i][j] == 0:
-                    nonzero_pixels_rate[i][j] = float(r1[r1>0].shape[0])/(x.shape[0]*x.shape[1]*(4*x.shape[2]-4))
-                    bytes_per_packet[i][j] = float(r1[r1>0].shape[0])/(x.shape[0])*4./(8*8)
-                    print(i, j, nonzero_pixels_rate[i][j], bytes_per_packet[i][j])
-                    flag = False
+        if print_flag:
+            flag = True
+            nonzero = float(r1[r1>0].shape[0])/(x.shape[0]*x.shape[1]*(4*x.shape[2]-4))
+            bytes_per = float(r1[r1>0].shape[0])/(x.shape[0])*4./(8*8)
+            for i in range(6):
+                for j in range(num_gpu):
+                    if nonzero_pixels_rate[i][j] == 0:
+                        nonzero_pixels_rate[i][j] = nonzero
+                        bytes_per_packet[i][j] = bytes_per
+                        # print(i, j, nonzero, bytes_per)
+                        flag = False
+                        time.sleep(1)
+                        break
+                if flag == False:
                     break
-            if flag == False:
-                break
-        if flag == True:
-            print("ERROR!!!!!!")
+            if flag == True:
+                print("ERROR!!!!!!")
         
         ################################################################
-        # print("Ratio of nonzero pixels:" + str(float(r1[r1>0].shape[0])/(x.shape[0]*x.shape[1]*(4*x.shape[2]-4))))
-        # print("number of bytes per packet:" + str(float(r1[r1>0].shape[0])/(x.shape[0])*4./(8*8)))
+        '''
+        if (print_flag):
+            print("Ratio of nonzero pixels:" + str(float(r1[r1>0].shape[0])/(x.shape[0]*x.shape[1]*(4*x.shape[2]-4))))
+            print("number of bytes per packet:" + str(float(r1[r1>0].shape[0])/(x.shape[0])*4./(8*8)))
+        '''
         ################################################################
         # print(float(r1[r1>0].shape[0])/r1.view(-1).shape[0])
         # print(r1[0,0,:,:])
@@ -301,7 +311,7 @@ class VGG(nn.Module):
 
 
 def test():
-    net = VGG('VGG16', 'Caltech256', False, lossyLinear=True)
+    net = VGG('VGG16', 'Caltech256', False, lossyLinear=True, lower_bound=0.999999, upper_bound=1.0)
     net = net.to('cuda')
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
@@ -312,4 +322,4 @@ def test():
     # print_array()
     
 
-test()
+# test()

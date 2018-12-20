@@ -186,7 +186,6 @@ def train(net, device, optimizer, criterion, epoch, train_loader):
         # data_time = time2 - time1
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
-        vgg_new.init_array()
         outputs = net(inputs)
         
         loss = criterion(outputs, targets)
@@ -214,16 +213,18 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     test_loss = 0
     correct = 0
     total = 0
-    nonzero_rate = np.zeros((6, 1), dtype=float)
-    bytes_per_packet = np.zeros((6, 1), dtype=float)
+    # nonzero_rate = np.zeros((6, 1), dtype=float)
+    # bytes_per_packet = np.zeros((6, 1), dtype=float)
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(test_loader):
             inputs, targets = inputs.to(device), targets.to(device)
-            vgg_new.init_array()
+            if batch_idx == 0:
+                vgg_new.set_print_flag(True)
+                vgg_new.init_array()
             outputs = net(inputs)
-            nonzero, bytes_per = vgg_new.get_array()
-            nonzero_rate = nonzero_rate + nonzero
-            bytes_per_packet = bytes_per_packet + bytes_per
+            if batch_idx == 0:
+                nonzero, bytes_per = vgg_new.get_array()
+                vgg_new.set_print_flag(False)
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()
@@ -236,11 +237,11 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     print("Epoch %d finish, test acc : %f, best add : %f" % (epoch, acc, best_acc))
     writer.add_scalar('Acc', acc, epoch)
     writer.add_scalar('Loss', test_loss, epoch)
-
+    
     for i in range(6):
-        writer.add_scalar('Nonzero_Rate_' + str(i + 1), nonzero_rate[i][0] / 10., epoch)
-        writer.add_scalar('Bytes_Per_Packet_' + str(i + 1), bytes_per_packet[i][0] / 10., epoch)
-
+        writer.add_scalar('Nonzero_Rate_' + str(i + 1), nonzero[i], epoch)
+        writer.add_scalar('Bytes_Per_Packet_' + str(i + 1), bytes_per[i], epoch)
+    
     if acc > best_acc:
         print('Saving..')
         state = {
