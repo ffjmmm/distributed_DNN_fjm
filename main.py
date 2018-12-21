@@ -292,7 +292,7 @@ def main():
     else:
         name = name + 'Distributed_lr=' + str(args.lr) + '_Conv=(' + str(args.p11) + ',' + str(args.p22) + ')_ReLU=(' + str(args.lower_bound) + ',' + str(args.upper_bound) + ')_bs=' + str(args.batch_size) + '_' + str(args.pieces) + 'x' + str(args.pieces)
         if args.lossyLinear:
-            name = name + '_lossyLinear=' + args.loss_prob
+            name = name + '_lossyLinear=' + str(args.loss_prob)
         else:
             name = name + '_noLossyLinear'
     print(name)

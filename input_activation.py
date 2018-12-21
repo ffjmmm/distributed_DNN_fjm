@@ -169,8 +169,10 @@ class Lossy_Linear(Module):
         self.out_features = out_features
         self.weight = Parameter(torch.Tensor(out_features, in_features))
         self.pieces = pieces
-        self.block_size_x = in_features/self.pieces
-        self.block_size_y = out_features/self.pieces
+        self.block_size_x = in_features // self.pieces
+        self.block_size_x_mod = in_features % self.pieces
+        self.block_size_y = out_features // self.pieces
+        self.block_size_y_mod = out_features % self.pieces
         self.loss_prob = loss_prob
         if bias:
             self.bias = Parameter(torch.Tensor(out_features))
@@ -186,9 +188,10 @@ class Lossy_Linear(Module):
 
     def forward(self, input):
         # generate a random matrix
-        r = torch.rand((self.pieces,self.pieces)) < self.loss_prob
+        r = torch.rand((self.pieces,self.pieces)) > self.loss_prob
         # then extend it to the block random
-        u = np.concatenate((np.repeat(r.numpy(),self.block_size_y,axis = 1),np.ones((self.pieces,1))),axis = 1)
+        # u = np.concatenate((np.repeat(r.numpy(),self.block_size_y,axis = 1),np.ones((self.pieces,1))),axis = 1)
+        u = np.concatenate((np.repeat(r.numpy(),self.block_size_y,axis = 1), np.ones((self.pieces, self.block_size_y_mod))),axis = 1)
         mask = torch.tensor(np.repeat(u,self.block_size_x,axis = 0)).cuda()
         #print(self.weight.shape)
         #print(self.block_size_y)
