@@ -241,6 +241,7 @@ class VGG(nn.Module):
     def forward(self, x):
         # split x
         # print("input x: ", x.shape)
+        # time1 = time.time()
         if self.original:
             out = self.features1(x)
             out = self.features2(out)
@@ -251,7 +252,6 @@ class VGG(nn.Module):
                 xxx = torch.chunk(xx[i], self.f12_pieces[1], 3)
                 x_split.append(xxx)
         
-            # time1 = time.time()
             out = []
             for i in range(self.f12_pieces[0]):
                 dummy = []
@@ -268,10 +268,10 @@ class VGG(nn.Module):
 
         # this is the end of the split
         # for feature 3, we have the loss transmission
-        time1 = time.time()
+        # time1 = time.time()
         out = self.features3(out)
         out = self.features4(out)
-        time2 = time.time()
+        # time2 = time.time()
         # print("Feature 3 & 4 time = ", time2 - time1)
         
         out = self.features5(out)
@@ -311,7 +311,7 @@ class VGG(nn.Module):
 
 
 def test():
-    net = VGG('VGG16', 'Caltech256', False, lossyLinear=True, lower_bound=0.999999, upper_bound=1.0)
+    net = VGG('VGG16', 'Caltech256', False, lossyLinear=True, lower_bound=0.999999, upper_bound=1.0, pieces=(4, 4), f12_pieces=(4, 4))
     net = net.to('cuda')
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
