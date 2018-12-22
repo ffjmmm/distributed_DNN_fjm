@@ -33,7 +33,8 @@ parser.add_argument('--weight_decay', default=5e-4, type=float, help='weight dec
 parser.add_argument('--epoch', default=200, type=int, help='training epoch')
 parser.add_argument('--p11', default=0.99, type=float, help='p11')
 parser.add_argument('--p22', default=0.03, type=float, help='p22')
-parser.add_argument('--pieces', default=2, type=int, help='pieces to split')
+parser.add_argument('--pieces_x', default=2, type=int, help='pieces to split on x')
+parser.add_argument('--pieces_y', default=2, type=int, help='pieces to split on y')
 parser.add_argument('--lossyLinear', action='store_true', help='use Lossy Linear')
 parser.add_argument('--loss_prob', default=0.1, type=float, help='loss prob in Lossy Linear')
 parser.add_argument('--lower_bound', default=0.5, type=float, help='lower bound in Quant ReLU')
@@ -264,7 +265,7 @@ def main():
 
     print('==> Building model..')
     time_buildmodel_start = time.time()
-    net = vgg_new.VGG('VGG16', args.dataset, args.original, args.p11, args.p22, args.lossyLinear, args.loss_prob, (args.pieces, args.pieces), (args.pieces, args.pieces), args.lower_bound, args.upper_bound)
+    net = vgg_new.VGG('VGG16', args.dataset, args.original, args.p11, args.p22, args.lossyLinear, args.loss_prob, (args.pieces_x, args.pieces_y), (args.pieces_x, args.pieces_y), args.lower_bound, args.upper_bound)
     time_buildmodel_end = time.time()
 
     net = net.to(device)
@@ -290,7 +291,7 @@ def main():
     if args.original:
         name = name + 'Original_lr=' + str(args.lr) + '_bs=' + str(args.batch_size)
     else:
-        name = name + 'Distributed_lr=' + str(args.lr) + '_Conv=(' + str(args.p11) + ',' + str(args.p22) + ')_ReLU=(' + str(args.lower_bound) + ',' + str(args.upper_bound) + ')_bs=' + str(args.batch_size) + '_' + str(args.pieces) + 'x' + str(args.pieces)
+        name = name + 'Distributed_lr=' + str(args.lr) + '_Conv=(' + str(args.p11) + ',' + str(args.p22) + ')_ReLU=(' + str(args.lower_bound) + ',' + str(args.upper_bound) + ')_bs=' + str(args.batch_size) + '_' + str(args.pieces_x) + 'x' + str(args.pieces_y)
         if args.lossyLinear:
             name = name + '_lossyLinear=' + str(args.loss_prob)
         else:
