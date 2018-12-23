@@ -19,6 +19,7 @@ import argparse
 import time
 
 import vgg_new
+import dataset
 
 
 parser = argparse.ArgumentParser(description='PyTorch Training')
@@ -40,138 +41,6 @@ parser.add_argument('--loss_prob', default=0.1, type=float, help='loss prob in L
 parser.add_argument('--lower_bound', default=0.5, type=float, help='lower bound in Quant ReLU')
 parser.add_argument('--upper_bound', default=1.0, type=float, help='upper bound in Quant ReLU')
 args = parser.parse_args()
-
-
-# Data
-def load_data():
-    print('==> Preparing data..')
-    time_data_start = time.time()
-    if args.dataset == 'CIFFAR10':
-        transform_train = transforms.Compose([
-           transforms.RandomCrop(32, padding=4),
-           transforms.RandomHorizontalFlip(),
-           transforms.ToTensor(),
-           transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-        ])
-
-        transform_test = transforms.Compose([
-           transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-        ])
-
-        trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
-        train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
-
-        testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
-        test_loader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=2)
-
-        classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-    if args.dataset == 'Caltech101' or args.dataset == 'Caltech256':
-        def default_loader(path):
-            return Image.open(path).convert('RGB')
-
-        class MyDataset(Dataset):
-            def __init__(self, txt, transform=None, loader=default_loader):
-                f = open(txt, 'r')
-                imgs = []
-                for line in f:
-                    line = line.rstrip()
-                    line = line.strip('\n')
-                    line = line.rstrip()
-                    words = line.split()
-                    img = loader(words[0])
-                    imgs.append((img, int(words[1])))
-                self.imgs = imgs
-                self.transform = transform
-
-            def __getitem__(self, index):
-                img, label = self.imgs[index]
-                if self.transform is not None:
-                    img = self.transform(img)
-                return img, label
-
-            def __len__(self):
-                return len(self.imgs)
-
-        '''
-        mean = [0.485, 0.456, 0.406]
-        std = [0.229, 0.224, 0.225]
-
-        transform = transforms.Compose([
-            transforms.Scale(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std),
-        ])
-
-        train_data = MyDataset(txt='./dataset-train.txt', transform=transform)
-        test_data = MyDataset(txt='./dataset-test.txt', transform=transform)
-        train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True, num_workers=2)
-        test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, num_workers=2)
-
-        '''
-
-        enhancers = {
-            0: lambda image, f: ImageEnhance.Color(image).enhance(f),
-            1: lambda image, f: ImageEnhance.Contrast(image).enhance(f),
-            2: lambda image, f: ImageEnhance.Brightness(image).enhance(f),
-            3: lambda image, f: ImageEnhance.Sharpness(image).enhance(f)
-        }
-
-        factors = {
-            0: lambda: np.random.normal(1.0, 0.3),
-            1: lambda: np.random.normal(1.0, 0.1),
-            2: lambda: np.random.normal(1.0, 0.1),
-            3: lambda: np.random.normal(1.0, 0.3),
-        }
-
-        # random enhancers in random order
-        def enhance(image):
-            order = [0, 1, 2, 3]
-            np.random.shuffle(order)
-            for i in order:
-                f = factors[i]()
-                image = enhancers[i](image, f)
-            return image
-
-        # train data augmentation on the fly
-        train_transform = transforms.Compose([
-            transforms.Resize(256),
-            transforms.RandomCrop(224),
-            transforms.RandomHorizontalFlip(),
-            transforms.Lambda(enhance),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225]
-            ),
-        ])
-        
-        test_transform = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225]
-            ),
-        ])
-        
-        if args.dataset == 'Caltech101':
-            train_set = MyDataset(txt='./data/dataset-train-101.txt', transform=train_transform)
-            test_set = MyDataset(txt='./data/dataset-test-101.txt', transform=test_transform)
-        else:
-            train_set = MyDataset(txt='./data/dataset-train.txt', transform=train_transform)
-            test_set = MyDataset(txt='./data/dataset-test.txt', transform=test_transform)
-        # train_set = torchvision.datasets.ImageFolder('./data/256_ObjectCategories/' + 'train', train_transform)
-        # test_set = torchvision.datasets.ImageFolder('./data/256_ObjectCategories/' + 'test', test_transform)
-        train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=32)
-        test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=32)
-
-    time_data_end = time.time()
-    print("Preparing data spends %fs\n" % (time_data_end - time_data_start))
-
-    return train_loader, test_loader
 
 
 # Training
@@ -298,7 +167,9 @@ def main():
             name = name + '_noLossyLinear'
     print(name)
     writer = SummaryWriter('logs/new_' + args.dataset + '/' + name)
-    train_loader, test_loader = load_data()
+    
+    train_loader, test_loader = dataset.load_data(args.dataset, arge.batch_size)
+    
     print('==> Training..')
     for epoch in range(start_epoch, start_epoch + args.epoch):
         time_epoch_start = time.time()
