@@ -237,6 +237,27 @@ class VGG(nn.Module):
                     nn.ReLU(True),
                     nn.Linear(4096, 101)
                 )
+        elif dataset == 'ImageNet':
+            if lossyLinear:
+                self.classifier = nn.Sequential(
+                    Lossy_Linear(25088, 4096, loss_prob=loss_prob),
+                    nn.BatchNorm1d(4096),
+                    nn.ReLU(True),
+                    Lossy_Linear(4096, 4096, loss_prob=loss_prob),
+                    nn.BatchNorm1d(4096),
+                    nn.ReLU(True),
+                    Lossy_Linear(4096, 101, loss_prob=loss_prob)
+                )
+            else:
+                self.classifier = nn.Sequential(
+                    nn.Linear(25088, 4096),
+                    nn.BatchNorm1d(4096),
+                    nn.ReLU(True),
+                    nn.Linear(4096, 4096),
+                    nn.BatchNorm1d(4096),
+                    nn.ReLU(True),
+                    nn.Linear(4096, 101)
+                )
 
     def forward(self, x):
         # split x

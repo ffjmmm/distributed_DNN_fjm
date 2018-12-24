@@ -168,7 +168,7 @@ def main():
     print(name)
     writer = SummaryWriter('logs/new_' + args.dataset + '/' + name)
     
-    train_loader, test_loader = dataset.load_data(args.dataset, arge.batch_size)
+    train_loader, test_loader = dataset.load_data(args.dataset, args.batch_size)
     
     print('==> Training..')
     for epoch in range(start_epoch, start_epoch + args.epoch):
