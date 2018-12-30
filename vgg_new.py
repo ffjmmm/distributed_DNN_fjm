@@ -58,7 +58,7 @@ class lossy_Conv2d_new(nn.Module):
             # use the parameters instead of numbers
             nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=0)
         )
-        if dataset == 'Caltech256' or dataset == 'Caltech101':
+        if dataset == 'Caltech256' or dataset == 'Caltech101' or dataset == 'ImageNet':
             s1 = 56
             x1 = s1 // num_pieces[0] + 2
             y1 = s1 // num_pieces[1] + 2
@@ -246,7 +246,7 @@ class VGG(nn.Module):
                     Lossy_Linear(4096, 4096, loss_prob=loss_prob),
                     nn.BatchNorm1d(4096),
                     nn.ReLU(True),
-                    Lossy_Linear(4096, 101, loss_prob=loss_prob)
+                    Lossy_Linear(4096, 1000, loss_prob=loss_prob)
                 )
             else:
                 self.classifier = nn.Sequential(
@@ -256,7 +256,7 @@ class VGG(nn.Module):
                     nn.Linear(4096, 4096),
                     nn.BatchNorm1d(4096),
                     nn.ReLU(True),
-                    nn.Linear(4096, 101)
+                    nn.Linear(4096, 1000)
                 )
 
     def forward(self, x):
@@ -332,7 +332,7 @@ class VGG(nn.Module):
 
 
 def test():
-    net = VGG('VGG16', 'Caltech101', False, lossyLinear=True, lower_bound=1.999, upper_bound=2.0, pieces=(2, 2), f12_pieces=(2, 2))
+    net = VGG('VGG16', 'ImageNet', False, lossyLinear=True, lower_bound=1.9, upper_bound=2.0, pieces=(2, 2), f12_pieces=(2, 2))
     net = net.to('cuda')
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True

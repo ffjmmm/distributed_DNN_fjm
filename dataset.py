@@ -8,6 +8,9 @@ from torch.utils.data import Dataset, DataLoader
 from PIL import Image, ImageEnhance
 import time
 import os
+import pickle
+import msgpack
+import cv2
 
 import torchvision
 import torchvision.transforms as transforms
@@ -226,7 +229,10 @@ def get_Caltech256(root='./data', batch_size=256, num_workers=32):
     return train_loader, test_loader
 
 
-def get_ImageNet(root='/data', batch_size=256, num_workers=16, in_memory=True):
+def get_ImageNet(root='../../datasets/harvard', batch_size=256, num_workers=16, in_memory=True, input_size=224):
+    print('==> Preparing ImageNet data..')
+    time_data_start = time.time()
+    
     train_path = os.path.join(root, 'imagenet-msgpack', 'ILSVRC-train.bin')
     val_path = os.path.join(root, 'imagenet-msgpack', 'ILSVRC-val.bin')
     if not in_memory:
@@ -239,7 +245,7 @@ def get_ImageNet(root='/data', batch_size=256, num_workers=16, in_memory=True):
 
         train_loader.num_samples = num_train
         test_loader.num_samples = num_val
-        return None, train_loader, None, test_loader
+        return train_loader, test_loader
     else:
         num_train = 1281167
         num_val = 50000
@@ -272,7 +278,12 @@ def get_ImageNet(root='/data', batch_size=256, num_workers=16, in_memory=True):
                                 ]))
         test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=False, drop_last=False, num_workers=num_workers, pin_memory=True)
         test_loader.num_samples = num_val
-        return train_loader, test_loader
+        
+    time_data_end = time.time()
+    print("Preparing data spends %fs\n" % (time_data_end - time_data_start))
+    
+    return train_loader, test_loader
+
 
 def load_data(dataset, batch_size):
     if dataset == 'CIFFAR10':
