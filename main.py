@@ -19,6 +19,7 @@ import argparse
 import time
 
 import vgg_new
+import resnet18_new
 import dataset
 
 
@@ -71,13 +72,13 @@ def train(net, device, optimizer, criterion, epoch, train_loader):
             time2 = time.time()
             print('Epoch: %d [%d/%d]: loss = %f, acc = %f time = %d' % (epoch, batch_idx, len(train_loader), loss.item(), predicted.eq(targets).sum().item() / targets.size(0), time2 - time1))
             time1 = time.time()
-        
         '''
         time1 = time.time()
         batch_time = time1 - time2
         print("data_time: ", data_time, "batch_time: ", batch_time)
         '''
-
+        
+        
 def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
     net.eval()
     test_loss = 0
@@ -121,7 +122,7 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/ckpt_' + args.dataset + '.t7')
+        torch.save(state, './checkpoint/ckpt_' + args.dataset + '_ResNet18_2x2' + '.t7')
         best_acc = acc
 
     return best_acc
@@ -134,7 +135,8 @@ def main():
 
     print('==> Building model..')
     time_buildmodel_start = time.time()
-    net = vgg_new.VGG('VGG16', args.dataset, args.original, args.p11, args.p22, args.lossyLinear, args.loss_prob, (args.pieces_x, args.pieces_y), (args.pieces_x, args.pieces_y), args.lower_bound, args.upper_bound)
+    # net = vgg_new.VGG('VGG16', args.dataset, args.original, args.p11, args.p22, args.lossyLinear, args.loss_prob, (args.pieces_x, args.pieces_y), (args.pieces_x, args.pieces_y), args.lower_bound, args.upper_bound)
+    net = resnet18_new.ResNet18_new(num_classes = 1000, lower_bound = args.lower_bound, upper_bound = args.upper_bound, num_pieces=(args.pieces_x, args.pieces_y))
     time_buildmodel_end = time.time()
 
     net = net.to(device)
@@ -156,7 +158,7 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    name = 'VGG_'
+    name = 'Res18_'
     if args.original:
         name = name + 'Original_lr=' + str(args.lr) + '_bs=' + str(args.batch_size)
     else:
