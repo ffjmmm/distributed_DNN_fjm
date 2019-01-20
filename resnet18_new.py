@@ -42,11 +42,11 @@ class lossy_Conv2d_new(nn.Module):
         x3 = s3 // num_pieces[0] + 2
         y3 = s3 // num_pieces[1] + 2
         
-        self.num_112 = 500
+        self.num_112 = 300
         self.mask_112 = markov_rand([16, self.num_112, x1, y1], p11, p22)
-        self.num_56 = 1000
+        self.num_56 = 500
         self.mask_56 = markov_rand([16, self.num_56, x2, y2], p11, p22)
-        self.num_28 = 2000
+        self.num_28 = 800
         self.mask_28 = markov_rand([16, self.num_28, x3, y3], p11, p22)
 
     def forward(self, x):
@@ -257,8 +257,9 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, block_lossy, num_blocks, num_classes=10, p11 = 0.99, p22 = 0.03, num_pieces= (2,2), loss_prob = 0.05, lower_bound = 2, upper_bound = 3):
+    def __init__(self, block, block_lossy, num_blocks, num_classes=10, p11 = 0.99, p22 = 0.03, num_pieces= (2,2), loss_prob = 0.05, lower_bound = 2, upper_bound = 3, original = False):
         super(ResNet, self).__init__()
+        self.original = original
         self.p11 = p11
         self.p22 = p22
         self.num_pieces = num_pieces
@@ -267,9 +268,14 @@ class ResNet(nn.Module):
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1, quant_relu_end = 0, num_pieces = num_pieces)
-        self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2, quant_relu_end = 1, num_pieces = num_pieces)
-        self.layer3 = self._make_layers_lossy_conv(block_lossy = block_lossy, planes = 256, num_blocks = num_blocks[2], stride=2, p11 = self.p11 , p22 = self.p22, num_pieces = self.num_pieces)
-        self.layer4 = self._make_layers_lossy_conv(block_lossy = block_lossy, planes = 512, num_blocks = num_blocks[3], stride=2, p11 = self.p11 , p22 = self.p22, num_pieces = self.num_pieces)
+        if original:
+            self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2, quant_relu_end=0, num_pieces = num_pieces)
+            self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2, quant_relu_end=0, num_pieces=num_pieces)
+            self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2, quant_relu_end=0, num_pieces=num_pieces)
+        else:
+            self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2, quant_relu_end = 1, num_pieces = num_pieces)
+            self.layer3 = self._make_layers_lossy_conv(block_lossy = block_lossy, planes = 256, num_blocks = num_blocks[2], stride=2, p11 = self.p11 , p22 = self.p22, num_pieces = self.num_pieces)
+            self.layer4 = self._make_layers_lossy_conv(block_lossy = block_lossy, planes = 512, num_blocks = num_blocks[3], stride=2, p11 = self.p11 , p22 = self.p22, num_pieces = self.num_pieces)
         self.linear = nn.Linear(512, num_classes)
         # self.linear = Lossy_Linear(512, num_classes, loss_prob=self.loss_prob)
 
@@ -298,47 +304,74 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        # split the input matrix
-        (x1,x2) = torch.chunk(x,2,2)
-        (x11,x12) = torch.chunk(x1,2,3)
-        (x21,x22) = torch.chunk(x2,2,3)
+        if self.original:
+            out = F.relu(self.bn1(self.conv1(x)))
+            out = self.layer1(out)
+            out = self.layer2(out)
+        else:
+            # split the input matrix
+            
+            x_split = []
+            xx = torch.chunk(x, self.f12_pieces[0], 2)
+            for i in range(self.f12_pieces[0]):
+                xxx = torch.chunk(xx[i], self.f12_pieces[1], 3)
+                x_split.append(xxx)
+                
+            out = []
+            for i in range(self.f12_pieces[0]):
+                dummy = []
+                for j in range(self.f12_pieces[1]):
+                    rr = F.relu(self.bn1(self.conv1(x_split[i][j].cuda())))
+                    rr = self.layer1(rr.cuda())
+                    rr = self.layer2(rr.cuda())
+                    dummy.append(rr)
+                dummy_cat = torch.cat((dummy[0: self.f12_pieces[1]]), 3)
+                out.append(dummy_cat)
+            out = torch.cat((out[0: self.f12_pieces[0]]), 2)
+            out.cuda()
+            
+            '''
+            (x1,x2) = torch.chunk(x,2,2)
+            (x11,x12) = torch.chunk(x1,2,3)
+            (x21,x22) = torch.chunk(x2,2,3)
 
-        # time1 = time.time()
-        out11 = F.relu(self.bn1(self.conv1(x11)))
-        out12 = F.relu(self.bn1(self.conv1(x12)))
-        out21 = F.relu(self.bn1(self.conv1(x21)))
-        out22 = F.relu(self.bn1(self.conv1(x22)))
-        # time2 = time.time()
-        # print("conv1 time : ", time2 - time1)
+            #time1 = time.time()
+            out11 = F.relu(self.bn1(self.conv1(x11)))
+            out12 = F.relu(self.bn1(self.conv1(x12)))
+            out21 = F.relu(self.bn1(self.conv1(x21)))
+            out22 = F.relu(self.bn1(self.conv1(x22)))
+            #time2 = time.time()
+            #print("conv1 time : ", time2 - time1)
         
-        # time1 = time.time()
-        out11 = self.layer1(out11)   #([8, 64, 224, 224])
-        out12 = self.layer1(out12)   #([8, 64, 224, 224])
-        out21 = self.layer1(out21)   #([8, 64, 224, 224])
-        out22 = self.layer1(out22)   #([8, 64, 224, 224])
-        out11 = self.layer2(out11)   #([8, 128, 112, 112])
-        out12 = self.layer2(out12)   #([8, 128, 112, 112])
-        out21 = self.layer2(out21)   #([8, 128, 112, 112])
-        out22 = self.layer2(out22)   #([8, 128, 112, 112])
-        # time2 = time.time()
-        # print("layer1&2 time : ", time2 - time1)
+            # time1 = time.time()
+            out11 = self.layer1(out11)   #([8, 64, 224, 224])
+            out12 = self.layer1(out12)   #([8, 64, 224, 224])
+            out21 = self.layer1(out21)   #([8, 64, 224, 224])
+            out22 = self.layer1(out22)   #([8, 64, 224, 224])
+            out11 = self.layer2(out11)   #([8, 128, 112, 112])
+            out12 = self.layer2(out12)   #([8, 128, 112, 112])
+            out21 = self.layer2(out21)   #([8, 128, 112, 112])
+            out22 = self.layer2(out22)   #([8, 128, 112, 112])
+            #time2 = time.time()
+            #print("layer1&2 time : ", time2 - time1)
+            
+            out1 = torch.cat((out11,out12),3)
+            out2 = torch.cat((out21,out22),3)    
+            out = torch.cat((out1,out2),2)
+            '''
         
-        out1 = torch.cat((out11,out12),3)
-        out2 = torch.cat((out21,out22),3)    
-        out = torch.cat((out1,out2),2) 
-        
-        # time1 = time.time()
+        #time1 = time.time()
         out = self.layer3(out)   #([8, 256, 56, 56])
         out = self.layer4(out)   #([8, 512, 28, 28])
-        # time2 = time.time()
-        # print("layer3&4 time : ", time2 - time1)
+        #time2 = time.time()
+        #print("layer3&4 time : ", time2 - time1)
         
-        # time1 = time.time()
+        #time1 = time.time()
         out = F.adaptive_avg_pool2d(out, 1)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
-        # time2 = time.time()
-        # print("linear time : ", time2 - time1)
+        #time2 = time.time()
+        #print("linear time : ", time2 - time1)
         ###############################################################
         ###############recover this for printing out the pkt size######
         '''
@@ -352,8 +385,8 @@ class ResNet(nn.Module):
         return out
 
 
-def ResNet18_new(num_classes = 101, p11 = 0.99, p22 = 0.03, loss_prob = 0.1, num_pieces = (2,2), lower_bound = 2, upper_bound = 3):
-    return ResNet(BasicBlock, BasicBlock_lossy, [2,2,2,2], num_classes = num_classes, p11 = 0.99, p22 = 0.03, loss_prob = 0.1, num_pieces = num_pieces, lower_bound = lower_bound, upper_bound = upper_bound)
+def ResNet18_new(num_classes = 101, p11 = 0.99, p22 = 0.03, loss_prob = 0.1, num_pieces = (2,2), lower_bound = 2, upper_bound = 3, original=False):
+    return ResNet(BasicBlock, BasicBlock_lossy, [2,2,2,2], num_classes = num_classes, p11 = 0.99, p22 = 0.03, loss_prob = 0.1, num_pieces = num_pieces, lower_bound = lower_bound, upper_bound = upper_bound, original=original)
 
 def ResNet34():
     return ResNet(BasicBlock, [3,4,6,3])
@@ -370,11 +403,11 @@ def ResNet152():
 
 def test():
     net = ResNet18_new(num_classes=1000)
-    net = net.to('cuda')
+    net = net.cuda()
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
-    x = torch.randn(128, 3, 224, 224)
-    y = net(x)
+    x = torch.randn(1, 3, 224, 224)
+    y = net(x.cuda())
     print(y.size())
 
 # test()

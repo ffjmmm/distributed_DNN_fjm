@@ -55,14 +55,21 @@ def train(net, device, optimizer, criterion, epoch, train_loader):
     for batch_idx, (inputs, targets) in enumerate(train_loader):
         # time2 = time.time()
         # data_time = time2 - time1
-        inputs, targets = inputs.to(device), targets.to(device)
+        #inputs, targets = inputs.to(device), targets.to(device)
+        inputs, targets = inputs.cuda(non_blocking=True), targets.cuda(non_blocking=True)
+        # time3 = time.time()
+        # move_time = time3-time2
         optimizer.zero_grad()
         outputs = net(inputs)
         
+        # time4 = time.time()
+        # forward_time = time4 - time3
         loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
         
+        # time5 = time.time()
+        # backward_time = time5 - time4
         train_loss += loss.item()
         _, predicted = outputs.max(1)
         total += targets.size(0)
@@ -75,7 +82,8 @@ def train(net, device, optimizer, criterion, epoch, train_loader):
         '''
         time1 = time.time()
         batch_time = time1 - time2
-        print("data_time: ", data_time, "batch_time: ", batch_time)
+        print("data_time: ", data_time, "move_time:", move_time, "batch_time: ", batch_time)
+        print("forward_time: ", forward_time, "backward_time: ", backward_time)
         '''
         
         
@@ -122,7 +130,7 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/ckpt_' + args.dataset + '_ResNet18_2x2' + '.t7')
+        torch.save(state, './checkpoint/ckpt_' + args.dataset + '_ResNet18_original' + '.t7')
         best_acc = acc
 
     return best_acc
@@ -136,10 +144,11 @@ def main():
     print('==> Building model..')
     time_buildmodel_start = time.time()
     # net = vgg_new.VGG('VGG16', args.dataset, args.original, args.p11, args.p22, args.lossyLinear, args.loss_prob, (args.pieces_x, args.pieces_y), (args.pieces_x, args.pieces_y), args.lower_bound, args.upper_bound)
-    net = resnet18_new.ResNet18_new(num_classes = 1000, lower_bound = args.lower_bound, upper_bound = args.upper_bound, num_pieces=(args.pieces_x, args.pieces_y))
+    net = resnet18_new.ResNet18_new(num_classes = 1000, lower_bound = args.lower_bound, upper_bound = args.upper_bound, num_pieces=(args.pieces_x, args.pieces_y), original=args.original)
     time_buildmodel_end = time.time()
 
-    net = net.to(device)
+    #net = net.to(device)
+    net.cuda()
     if device == 'cuda':
         net = torch.nn.DataParallel(net)
         cudnn.benchmark = True
