@@ -130,7 +130,7 @@ def test(net, device, criterion, epoch, test_loader, best_acc, writer=None):
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/ckpt_' + args.dataset + '_ResNet18_original' + '.t7')
+        torch.save(state, './checkpoint/ckpt_' + args.dataset + '_ResNet18_4x4' + '.t7')
         best_acc = acc
 
     return best_acc

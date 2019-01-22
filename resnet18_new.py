@@ -313,22 +313,22 @@ class ResNet(nn.Module):
             # split the input matrix
             
             x_split = []
-            xx = torch.chunk(x, self.f12_pieces[0], 2)
-            for i in range(self.f12_pieces[0]):
-                xxx = torch.chunk(xx[i], self.f12_pieces[1], 3)
+            xx = torch.chunk(x, self.num_pieces[0], 2)
+            for i in range(self.num_pieces[0]):
+                xxx = torch.chunk(xx[i], self.num_pieces[1], 3)
                 x_split.append(xxx)
                 
             out = []
-            for i in range(self.f12_pieces[0]):
+            for i in range(self.num_pieces[0]):
                 dummy = []
-                for j in range(self.f12_pieces[1]):
+                for j in range(self.num_pieces[1]):
                     rr = F.relu(self.bn1(self.conv1(x_split[i][j].cuda())))
                     rr = self.layer1(rr.cuda())
                     rr = self.layer2(rr.cuda())
                     dummy.append(rr)
-                dummy_cat = torch.cat((dummy[0: self.f12_pieces[1]]), 3)
+                dummy_cat = torch.cat((dummy[0: self.num_pieces[1]]), 3)
                 out.append(dummy_cat)
-            out = torch.cat((out[0: self.f12_pieces[0]]), 2)
+            out = torch.cat((out[0: self.num_pieces[0]]), 2)
             out.cuda()
             
             '''
