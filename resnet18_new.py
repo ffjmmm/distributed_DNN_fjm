@@ -42,8 +42,9 @@ class lossy_Conv2d_new(nn.Module):
         x3 = s3 // num_pieces[0] + 2
         y3 = s3 // num_pieces[1] + 2
         
+        # generate mask in advance
         self.num_112 = 300
-        self.mask_112 = markov_rand([16, self.num_112, x1, y1], p11, p22)
+        self.mask_112 = markov_rand([16, self.num_112, x1, y1], p11, p22)  # change 16 to bs/8
         self.num_56 = 500
         self.mask_56 = markov_rand([16, self.num_56, x2, y2], p11, p22)
         self.num_28 = 800
